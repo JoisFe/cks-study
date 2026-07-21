@@ -1,0 +1,31 @@
+# ========== IDEs & Editors ==========
+.idea/
+.vscode/
+.omc/
+*.swp
+*~
+
+# ========== Logs ==========
+*.log
+
+global-groovy.log
+soapui.log
+soapui-errors.log
+
+# ========== OS Generated (Mac / Windows) ==========
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========== Java & Spring Boot (Build Outputs) ==========
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+.gradle/
