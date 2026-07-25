@@ -92,6 +92,8 @@ mkdir -p /opt/course/1
 vim /opt/course/1/cilium-policy.yaml
 ```
 
+> **🛠 만드는 법** — CiliumNetworkPolicy는 kubectl 생성기가 없다(dry-run 불가) → `docs.cilium.io`의 "Layer 4 Examples"에서 최소 뼈대를 복사해 `endpointSelector`/`fromEndpoints`/`toPorts`를 채운다.
+
 ```yaml
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -171,6 +173,8 @@ Save the manifest to `/opt/course/2/netpol.yaml` and apply it.
 mkdir -p /opt/course/2
 vim /opt/course/2/netpol.yaml
 ```
+
+> **🛠 만드는 법** — NetworkPolicy도 생성기가 없다(dry-run 불가) → `kubernetes.io/docs`의 "Network Policies" 예제 뼈대를 복사해 `podSelector`/`policyTypes`/`egress`를 채운다.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -327,6 +331,8 @@ Create a new user `sara` who must be able to `get`, `list` and `watch` Pods in n
 인증서 기반 사용자 생성의 정석 4단계: openssl로 key/CSR(CertificateSigningRequest — 인증서 서명 요청) → CSR 오브젝트(`signerName: kubernetes.io/kube-apiserver-client`) 제출·승인 → RBAC(Role-Based Access Control — 역할 기반 접근제어) 부여 → kubeconfig 등록. 인증서의 CN이 곧 사용자 이름이 된다.
 
 **2) 단계별 명령어/YAML**
+
+> **🛠 만드는 법** — CSR 오브젝트는 kubectl 생성기가 없다(dry-run 불가) → `kubernetes.io/docs`의 CSR 예제 뼈대를 복사해 `request`(base64)·`signerName`·`usages`를 채운다(key/CSR 파일은 openssl로 생성).
 
 ```bash
 mkdir -p /opt/course/4 && cd /opt/course/4
@@ -555,6 +561,8 @@ exit
 
 프로파일 예시(제공 파일): `chmod` 계열을 거부한다.
 
+> **🛠 만드는 법** — seccomp 프로파일(JSON)은 kubectl 리소스가 아니라 노드에 두는 설정 파일이다(dry-run 대상 아님). `kubernetes.io/docs`의 seccomp 예제를 복사해 `defaultAction`/`syscalls`를 편집한다.
+
 ```json
 {
   "defaultAction": "SCMP_ACT_ALLOW",
@@ -569,6 +577,8 @@ exit
 ```
 
 main terminal로 돌아와 `vim pod7.yaml`로 아래 manifest를 작성한다.
+
+> **🛠 만드는 법** — Pod은 생성기가 있다: `k run seccomp-pod --image=busybox:1.36 $do > pod.yaml`로 뼈대를 뽑아 `securityContext.seccompProfile`·`nodeName`을 채워 `k apply -f`. (`$do`=`--dry-run=client -o yaml`)
 
 ```yaml
 apiVersion: v1
@@ -713,6 +723,8 @@ kubectl label ns pay istio-injection=enabled --overwrite
 mkdir -p /opt/course/9
 vim /opt/course/9/peer-auth.yaml
 ```
+
+> **🛠 만드는 법** — PeerAuthentication은 생성기가 없다(dry-run 불가) → `istio.io/latest/docs`의 PeerAuthentication 예제 뼈대를 복사해 `mtls.mode`를 채운다.
 
 ```yaml
 apiVersion: security.istio.io/v1
@@ -870,6 +882,8 @@ pod 레벨(seccomp, runAsUser/runAsNonRoot)과 container 레벨(capabilities, re
 ```bash
 kubectl -n secure-apps edit deploy web-secure
 ```
+
+> **🛠 만드는 법** — Deployment는 생성기가 있다: `k create deploy web-secure --image=nginxinc/nginx-unprivileged:1.27 $do > deploy.yaml`로 뼈대를 뽑아 securityContext를 채운다(기존 리소스는 `k edit`으로 같은 필드를 추가). (`$do`=`--dry-run=client -o yaml`)
 
 ```yaml
 spec:
@@ -1111,6 +1125,8 @@ mkdir -p /opt/course/14
 vim /opt/course/14/policy.yaml
 ```
 
+> **🛠 만드는 법** — ValidatingAdmissionPolicy와 그 Binding은 생성기가 없다(dry-run 불가) → `kubernetes.io/docs`의 "Validating Admission Policy" 예제에서 두 리소스 뼈대를 복사해 CEL `expression`과 `matchResources`를 채운다.
+
 ```yaml
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
@@ -1212,6 +1228,8 @@ grep -B2 -A12 'Terminal shell in container' /etc/falco/falco_rules.yaml
 sudo vim /etc/falco/falco_rules.local.yaml
 ```
 
+> **🛠 만드는 법** — Falco 룰은 kubectl 리소스가 아니라 노드의 룰 파일이다(dry-run 대상 아님). 기본 `falco_rules.yaml`(또는 `falco.org/docs`)에서 룰을 복사해 `output`만 편집한다.
+
 ```yaml
 - rule: Terminal shell in container
   desc: A shell was used as the entrypoint/exec point into a container with an attached terminal.
@@ -1301,6 +1319,8 @@ kubectl -n prod edit role report-role
 ```
 
 rules에서 `secrets`만 제거한다(다른 리소스 권한은 유지).
+
+> **🛠 만드는 법** — Role은 생성기가 있다: `k create role pod-reader --verb=get,list --resource=pods $do > role.yaml`로 뼈대를 뽑아 rules를 채운다(기존 Role은 `k edit`으로 수정). (`$do`=`--dry-run=client -o yaml`)
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1

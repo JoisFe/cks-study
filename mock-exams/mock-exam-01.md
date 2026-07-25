@@ -83,6 +83,8 @@ mkdir -p /opt/course/1
 vim /opt/course/1/policies.yaml
 ```
 
+> **🛠 만드는 법** — NetworkPolicy는 생성기가 없다: dry-run으로 못 뽑으니 kubernetes.io/docs의 최소 뼈대(`podSelector`, `policyTypes`)를 복사해 규칙을 채운다.
+
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -270,6 +272,8 @@ kubectl -n world edit ingress world
 
 `spec` 아래에 추가:
 
+> **🛠 만드는 법** — Ingress는 생성기가 있다: `k create ingress <name> --rule="host/path=svc:port" $do > ing.yaml`로 뼈대를 뽑을 수 있다(여기선 기존 Ingress에 `spec.tls`만 추가). (`$do`=`--dry-run=client -o yaml`)
+
 ```yaml
   tls:
     - hosts:
@@ -377,6 +381,8 @@ kubectl -n batch edit deploy worker
 ```
 
 `spec.template.spec`에 추가:
+
+> **🛠 만드는 법** — Deployment는 생성기가 있다(여기선 기존 것을 `edit`): 새로 만들 땐 `k create deploy web --image=nginx --replicas=3 $do > deploy.yaml`로 뼈대를 뽑아 `spec.template.spec`에 필드를 채운다. (`$do`=`--dry-run=client -o yaml`)
 
 ```yaml
       automountServiceAccountToken: false
@@ -712,6 +718,8 @@ head -c 32 /dev/urandom | base64    # 32바이트 키 생성, 출력을 복사
 vim /etc/kubernetes/enc/enc.yaml
 ```
 
+> **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver 설정 파일이다: kubernetes.io/docs의 EncryptionConfiguration 예제를 복사해 편집한다.
+
 ```yaml
 apiVersion: apiserver.config.k8s.io/v1
 kind: EncryptionConfiguration
@@ -805,6 +813,8 @@ The gVisor runtime (`runsc`) is installed and configured in containerd on node `
 RuntimeClass(`node.k8s.io/v1`)를 만들고 pod spec에 `runtimeClassName`을 넣으면 끝. gVisor 위에서 도는지 검증은 `dmesg`에 gVisor 문자열이 찍히는지(또는 `uname -r`이 호스트와 다른지)로 한다.
 
 **2) 단계별 풀이**
+
+> **🛠 만드는 법** — RuntimeClass는 생성기가 없다: dry-run으로 못 뽑으니 kubernetes.io/docs의 최소 뼈대(`handler` 포함)를 복사해 채운다.
 
 ```bash
 cat << 'EOF' | kubectl apply -f -
@@ -1025,6 +1035,8 @@ sudo -i
 vim /etc/kubernetes/policywebhook/admission_config.yaml
 ```
 
+> **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver admission 설정 파일이다: kubernetes.io/docs의 ImagePolicyWebhook 예제를 복사해 빈 필드를 채운다.
+
 ```yaml
 apiVersion: apiserver.config.k8s.io/v1
 kind: AdmissionConfiguration
@@ -1108,6 +1120,8 @@ sudo -i
 vim /etc/falco/falco_rules.local.yaml
 ```
 
+> **🛠 만드는 법** — Falco 룰은 kubectl 리소스가 아니라 노드의 룰 파일이다: falco.org/docs의 룰 예제를 복사해 `condition/output`을 편집한다.
+
 ```yaml
 - rule: shell in container
   desc: detect shell spawned in any container
@@ -1180,6 +1194,8 @@ sudo -i
 mkdir -p /etc/kubernetes/audit/logs
 vim /etc/kubernetes/audit/policy.yaml
 ```
+
+> **🛠 만드는 법** — Audit Policy는 kubectl 리소스가 아니라 apiserver 설정 파일이다: kubernetes.io/docs의 Policy 예제를 복사해 룰을 채운다.
 
 ```yaml
 apiVersion: audit.k8s.io/v1

@@ -67,6 +67,8 @@ kubectl label --dry-run=server --overwrite ns team-red \
 
 시험에서 "이 pod가 restricted 네임스페이스에서 뜨도록 고쳐라"가 나오면 아래 템플릿을 그대로 적용한다.
 
+> **🛠 만드는 법** — Pod는 생성기가 있다: `k run secure-pod --image=nginx $do > pod.yaml` 로 뼈대를 뽑고 securityContext(runAsNonRoot·drop ALL·seccomp 등)를 채워 `k apply -f`. (여기서 `$do`=`--dry-run=client -o yaml`, 시험 세팅 변수)
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -101,6 +103,8 @@ spec:
 ### 1.6 클러스터 전역 기본값과 exemptions — AdmissionConfiguration
 
 네임스페이스 라벨 없이도 클러스터 전체 기본 레벨을 걸고, 특정 네임스페이스/사용자를 면제(exempt)할 수 있다. kube-apiserver의 `--admission-control-config-file` 로 지정하는 AdmissionConfiguration 파일을 쓴다.
+
+> **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver에 물리는 설정 파일이다(생성기·dry-run·`kubectl apply` 대상 아님). kubernetes.io/docs 'Pod Security Admission' 예제를 복사해 편집하고 `--admission-control-config-file`로 지정한다.
 
 ```yaml
 # /etc/kubernetes/psa/admission-config.yaml (control plane 노드에 저장)
@@ -316,6 +320,8 @@ Do not change anything else. Verify the running process UID inside the pod.
 kubectl -n lion edit deploy web-api
 ```
 
+> **🛠 만드는 법** — 기존 Deployment는 `edit`으로 고치지만, 처음부터 만들 땐 생성기로 뼈대를 뽑는다: `k create deploy web --image=nginx --replicas=3 $do > deploy.yaml` 후 `spec.template.spec`에 securityContext를 채운다. (`$do`=`--dry-run=client -o yaml`)
+
 ```yaml
 spec:
   template:
@@ -520,6 +526,8 @@ etcd에 저장되는 secret을 암호화하려면 kube-apiserver에 `EncryptionC
 head -c 32 /dev/urandom | base64
 ```
 
+> **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver에 물리는 설정 파일이다(생성기·dry-run·`kubectl apply` 대상 아님). kubernetes.io/docs 'Encrypting Secret Data at Rest' 예제를 복사해 키만 채우고 `--encryption-provider-config`로 지정한다.
+
 ```yaml
 # /etc/kubernetes/enc/enc.yaml (control plane 노드에 저장)
 apiVersion: apiserver.config.k8s.io/v1
@@ -657,6 +665,8 @@ gVisor는 구글이 만든 **user-space 애플리케이션 커널**이다. 컨�
 
 ### 5.3 RuntimeClass 생성 / 적용 / 검증
 
+> **🛠 만드는 법** — RuntimeClass는 `kubectl create` 생성기가 없다(dry-run으로 뽑을 수 없음). kubernetes.io/docs에서 'RuntimeClass' 최소 예제를 복사해 `handler`만 바꿔 채운다.
+
 ```yaml
 # RuntimeClass 생성 (클러스터 리소스, 네임스페이스 없음)
 apiVersion: node.k8s.io/v1
@@ -789,6 +799,8 @@ kubectl -n team-blue rollout restart deploy
 # 3) sidecar 확인: READY가 2/2 (앱 + istio-proxy)
 kubectl -n team-blue get pods
 ```
+
+> **🛠 만드는 법** — PeerAuthentication은 kubectl 생성기가 없는 Istio CRD다(dry-run 불가). istio.io/latest/docs에서 'PeerAuthentication' 예제를 복사해 `mtls.mode`만 STRICT로 채운다.
 
 ```yaml
 # 네임스페이스 전체에 mTLS 강제

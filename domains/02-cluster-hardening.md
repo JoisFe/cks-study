@@ -48,6 +48,8 @@ kubectl create rolebinding view-dev -n dev --clusterrole=view --serviceaccount=d
 
 동일한 내용의 YAML 형태(시험에서 기존 리소스를 수정할 때 필요):
 
+> **🛠 만드는 법** — Role·RoleBinding은 생성기가 있다: `k create role pod-reader --verb=get,list,watch --resource=pods -n dev $do > role.yaml`, `k create rolebinding pod-reader-binding --role=pod-reader --serviceaccount=dev:app-sa -n dev $do`로 뼈대를 뽑아 편집 후 `k apply -f`. (`$do`=`--dry-run=client -o yaml`, 시험 세팅 변수)
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -169,6 +171,8 @@ kubectl auth can-i delete configmaps -n finance \
 
 ### 2.2 automountServiceAccountToken: false — SA 레벨 vs Pod 레벨
 
+> **🛠 만드는 법** — ServiceAccount는 생성기가 있다: `k create sa no-token-sa -n dev $do > sa.yaml`로 뼈대를 뽑고 최상위에 `automountServiceAccountToken: false`를 채워 `k apply -f`.
+
 ```yaml
 # SA 레벨 — 이 SA를 쓰는 모든 Pod에 기본 적용
 apiVersion: v1
@@ -178,6 +182,8 @@ metadata:
   namespace: dev
 automountServiceAccountToken: false
 ```
+
+> **🛠 만드는 법** — Pod도 생성기가 있다: `k run app --image=nginx:1.27 -n dev $do > pod.yaml`로 뼈대를 뽑고 `serviceAccountName`·`automountServiceAccountToken`을 채워 `k apply -f`.
 
 ```yaml
 # Pod 레벨 — SA 설정보다 우선한다
@@ -322,6 +328,8 @@ curl -k https://<apiserver>:6443/api
 
 kubelet API(포트 10250)는 컨테이너 exec/log 접근이 가능한 강력한 API다. 익명 접근을 막고 apiserver를 통한 위임 인증/인가만 허용해야 한다.
 
+> **🛠 만드는 법** — KubeletConfiguration은 kubectl 리소스가 아니라 노드 설정 파일(`/var/lib/kubelet/config.yaml`)이다. dry-run으로 만들 수 없고, 이미 노드에 있는 파일을 열어 해당 필드만 편집한다(필드 예시는 kubernetes.io/docs 참고).
+
 ```yaml
 # /var/lib/kubelet/config.yaml 에서 확인/수정할 4개 필드
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -427,6 +435,8 @@ kubectl get node wk8s-node-1                 # Ready 유지 확인 (컨트롤플
 Kubernetes에는 User 객체가 없다. 클러스터 CA(Certificate Authority — 인증서를 발급·서명하는 인증 기관)가 서명한 클라이언트 인증서의 **CN(Common Name)이 사용자명, O(Organization)가 그룹**으로 해석된다. "새 개발자 alice에게 dev 네임스페이스 접근 권한을 부여하라"는 문제는 아래 6단계를 한 번에 수행하는 문제다.
 
 ### 4.1 전체 흐름 (6단계)
+
+> **🛠 만드는 법** — CertificateSigningRequest는 생성기가 없다(`kubectl create csr` 없음). 최소 뼈대를 kubernetes.io/docs에서 복사해 `request`(CSR 파일의 base64), `signerName`, `usages`를 채운다.
 
 ```bash
 # 1) 개인키 + CSR 파일 생성

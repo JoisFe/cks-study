@@ -79,26 +79,28 @@ spec:
 
 ### 1.3 허용 규칙 작성 기본형
 
-frontend → backend:8080만 허용하는 전형적인 형태.
+frontend → backend:8080만 허용하는 전형적인 형태다. 완성본을 통째로 외우지 말고 **뼈대에서 필드를 채워나가는 순서**로 익히면 실전에서 빠르게 재현할 수 있다.
+
+> **🛠 실전에서 이 YAML 만드는 법** — NetworkPolicy는 Pod·Deployment와 달리 `kubectl create`로 뽑는 **생성 명령이 없다**(dry-run 생성 불가). 그래서 **최소 뼈대에서 채운다**: 1.2의 default-deny를 복사하거나 kubernetes.io/docs의 "Network Policies" 예제를 복사해, 아래 `①→⑤` 순서로 채운 뒤 `k apply -f backend-allow.yaml`로 적용한다.
 
 ```yaml
-apiVersion: networking.k8s.io/v1
+apiVersion: networking.k8s.io/v1        # ① 뼈대: apiVersion / kind 는 고정값
 kind: NetworkPolicy
 metadata:
   name: backend-allow
-  namespace: moon
+  namespace: moon                       #    (대상 네임스페이스)
 spec:
-  podSelector:
+  podSelector:                          # ② 정책 대상 = 트래픽을 받는 backend
     matchLabels:
       app: backend
-  policyTypes:
+  policyTypes:                          # ③ 제어할 방향 (여기선 들어오는 Ingress)
     - Ingress
-  ingress:
+  ingress:                              # ④ '허용 규칙' 시작 — 이 블록이 없으면 전면 차단
     - from:
-        - podSelector:
+        - podSelector:                  #    상대방(peer) = frontend
             matchLabels:
               app: frontend
-      ports:
+      ports:                            # ⑤ 허용 포트 (from 과 형제 레벨!)
         - protocol: TCP
           port: 8080
 ```
@@ -345,6 +347,8 @@ on the control plane node and set the below parameter.
 
 kubelet 하드닝 후의 config.yaml 핵심 부분:
 
+> **🛠 만드는 법** — 이건 `kubectl create`로 뽑는 API 리소스가 아니라 노드의 kubelet 설정 파일(`/var/lib/kubelet/config.yaml`)이다. 새로 생성하지 말고 이미 있는 파일에서 아래 키만 편집한다(스키마는 kubernetes.io의 KubeletConfiguration 문서 참고).
+
 ```yaml
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
@@ -469,6 +473,8 @@ openssl req -x509 -newkey rsa:4096 -nodes -days 365 \
 ```
 
 ### 3.3 Ingress에 TLS 연결
+
+> **🛠 만드는 법** — Ingress는 생성기가 있다: `k create ingress web --rule="world.universe.mine/*=web:80" $do > ing.yaml` 로 뼈대를 뽑아 `spec.tls`만 채운 뒤 `k apply -f`(여기서 `$do`=`--dry-run=client -o yaml`). TLS Secret은 YAML로 쓰지 말고 3.2처럼 `k create secret tls`로 바로 생성한다.
 
 ```yaml
 apiVersion: networking.k8s.io/v1

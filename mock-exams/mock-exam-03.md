@@ -161,6 +161,8 @@ mkdir -p /opt/course/2
 vim /opt/course/2/checkout-egress.yaml
 ```
 
+> **🛠 만드는 법** — NetworkPolicy는 kubectl 생성기가 없다(dry-run으로 못 뽑는다). kubernetes.io/docs의 "Network Policies" 예제에서 최소 뼈대(`podSelector`+`policyTypes`)를 복사해 egress 규칙만 채운다.
+
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -588,6 +590,8 @@ exit
 kubectl -n apps edit deploy secure-web
 ```
 
+> **🛠 만드는 법** — Deployment엔 생성기가 있다(`k create deploy <n> --image=<img> $do > deploy.yaml`, `$do`=`--dry-run=client -o yaml`). 단 이 문제는 기존 Deployment를 `k -n apps edit deploy secure-web`로 고치는 것 — securityContext는 생성기가 안 채워주니 아래처럼 손으로 넣는다.
+
 ```yaml
     spec:
       containers:
@@ -667,6 +671,8 @@ sudo -i
 mkdir -p /etc/kubernetes/pss
 vim /etc/kubernetes/pss/admission-config.yaml
 ```
+
+> **🛠 만드는 법** — AdmissionConfiguration은 kubectl 리소스가 아니라 apiserver가 읽는 설정 파일이다(dry-run 대상 아님). kubernetes.io/docs "Pod Security Admission" 예제를 복사해 `exemptions`만 편집한다.
 
 ```yaml
 apiVersion: apiserver.config.k8s.io/v1
@@ -780,6 +786,8 @@ NEWKEY=$(cat /opt/course/9/newkey.b64)
 cp /etc/kubernetes/enc/enc.yaml /etc/kubernetes/enc/enc.yaml.bak   # 백업
 vim /etc/kubernetes/enc/enc.yaml
 ```
+
+> **🛠 만드는 법** — EncryptionConfiguration도 kubectl 리소스가 아니라 apiserver 설정 파일이다(dry-run 불가). 여기선 기존 `/etc/kubernetes/enc/enc.yaml`을 열어 `keys` 리스트만 편집한다(새 key는 맨 앞).
 
 ```yaml
 apiVersion: apiserver.config.k8s.io/v1
@@ -1071,6 +1079,8 @@ kube-linter lint /opt/course/12/manifests/web-deploy.yaml
 
 **멀티스테이지 Dockerfile** (`/opt/course/12/Dockerfile`):
 
+> **🛠 만드는 법** — Dockerfile은 kubectl 리소스가 아니라 이미지 빌드 파일이다(dry-run 없음). 기존 파일을 열어 빌드 스테이지(`FROM ... AS build`)와 최소 런타임 스테이지 2단으로 나눠 손으로 편집한다.
+
 ```dockerfile
 # --- build stage ---
 FROM golang:1.23 AS build
@@ -1206,6 +1216,8 @@ ssh worker1
 sudo -i
 vim /etc/falco/falco_rules.local.yaml
 ```
+
+> **🛠 만드는 법** — Falco 룰은 kubectl 리소스가 아니라 노드의 룰 파일이다(dry-run 없음). falco.org/docs의 룰 예제를 복사해 `/etc/falco/falco_rules.local.yaml`에서 condition/output만 고친다.
 
 ```yaml
 - rule: Read sensitive shadow file

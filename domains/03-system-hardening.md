@@ -341,6 +341,8 @@ AppArmor는 리눅스 LSM(Linux Security Module) 기반의 MAC(강제 접근 제
 
 시험에서는 프로파일을 직접 작성하기보다 **주어진 파일을 읽고 로드**하는 수준이면 충분하지만, 핵심 문법은 알아야 한다.
 
+> **🛠 만드는 법** — AppArmor 프로파일은 kubectl 리소스가 아니다(dry-run 대상 아님). 노드의 `/etc/apparmor.d/`에 두는 설정 파일 — kubernetes.io(AppArmor 튜토리얼) 등 허용 문서의 예제를 복사해 편집한다.
+
 ```text
 #include <tunables/global>
 
@@ -379,6 +381,8 @@ aa-status | grep k8s-deny-write
 ### 5.4 Pod 적용 — GA 방식 (v1.30+)
 
 v1.30부터 AppArmor는 GA(General Availability — 정식 안정화 단계)가 되어 `securityContext.appArmorProfile` **필드**를 사용한다. Pod 레벨(모든 컨테이너 적용) 또는 컨테이너 레벨 모두 가능하다.
+
+> **🛠 만드는 법** — Pod는 생성기가 있다: `k run secured-pod --image=busybox:1.36 $do > pod.yaml` 로 뼈대를 뽑고 `securityContext.appArmorProfile`(type/localhostProfile)을 채워 `k apply -f`. (`$do`=`--dry-run=client -o yaml`, 시험 세팅 변수)
 
 ```yaml
 apiVersion: v1
@@ -479,6 +483,8 @@ kubectl apply -f aa-test.yaml
 ### 6.1 개념과 프로파일 구조
 
 seccomp(secure computing mode)은 프로세스가 호출할 수 있는 **syscall을 필터링**한다. 프로파일은 JSON이다.
+
+> **🛠 만드는 법** — seccomp 프로파일(JSON)도 kubectl 리소스가 아니다(dry-run 대상 아님). 노드의 `/var/lib/kubelet/seccomp/`에 두는 설정 파일 — kubernetes.io 문서의 예제 JSON을 복사해 syscall 목록을 채운다.
 
 ```json
 {

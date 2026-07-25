@@ -98,6 +98,8 @@ syslog_output:
 
 `priority`는 높은 순으로 `EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFORMATIONAL, DEBUG`.
 
+> **🛠 만드는 법** — Falco 룰은 kubectl 리소스가 아니라 노드의 설정 파일이다. 생성 명령(dry-run)이 없으니 [falco.org/docs](https://falco.org/docs)의 rule/macro/list 예제를 복사해 `condition`·`output`만 요구사항대로 채운다.
+
 ```yaml
 # /etc/falco/falco_rules.local.yaml 예시 — list + macro + rule 풀 세트
 - list: my_shell_binaries
@@ -432,6 +434,8 @@ readlink -f /proc/<PID>/exe > /opt/course/m4/exe.txt
 
 불변 컨테이너는 **실행 중 파일시스템 변조가 불가능**하므로, 공격자가 쉘을 얻어도 악성 바이너리 다운로드·설치·지속화가 어렵다. 즉 immutability는 그 자체가 런타임 방어선이다. 핵심 패턴:
 
+> **🛠 만드는 법** — Deployment는 생성기가 있다: `k create deploy immutable-app --image=nginx:1.27.1 $do > deploy.yaml` 로 뼈대를 뽑고 container 레벨 `securityContext`(readOnlyRootFilesystem 등)와 emptyDir volume을 채워 `k apply -f`. (`$do`=`--dry-run=client -o yaml`, 시험 세팅 변수)
+
 ```yaml
 # 불변 컨테이너 표준 securityContext + 쓰기 경로만 emptyDir
 apiVersion: apps/v1
@@ -565,6 +569,8 @@ Audit 로그는 **kube-apiserver가 기록**한다. API 서버를 지나는 모�
 
 ### 4.2 Audit Policy 문법
 
+> **🛠 만드는 법** — Audit Policy는 kubectl 리소스가 아니라 apiserver가 읽는 설정 파일이다. 생성기가 없으니 [kubernetes.io/docs의 Auditing](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/) 예제 Policy를 복사해 `rules` 순서만 요구사항대로 채운다.
+
 ```yaml
 apiVersion: audit.k8s.io/v1
 kind: Policy
@@ -601,6 +607,8 @@ rules:
 ### 4.3 apiserver 플래그와 volume mount 함정
 
 policy 파일을 만들었으면 `/etc/kubernetes/manifests/kube-apiserver.yaml`(static pod)에 반영한다. **플래그 4~5종 + hostPath 마운트 2개**가 한 세트다.
+
+> **🛠 만드는 법** — 이건 kubectl로 만드는 리소스가 아니라 노드의 static pod manifest다. dry-run 대상이 아니며, 백업 후 `/etc/kubernetes/manifests/kube-apiserver.yaml`을 직접 편집하면 kubelet이 apiserver를 자동 재생성한다.
 
 ```yaml
 # /etc/kubernetes/manifests/kube-apiserver.yaml 에 추가
@@ -1346,6 +1354,8 @@ jq -r 'select(.objectRef.resource == "pods"
     and .objectRef.namespace == "prod")
     | .user.username' /etc/kubernetes/audit/audit.log | sort -u > /opt/course/12/attacker.txt
 ```
+
+> **🛠 만드는 법** — NetworkPolicy는 생성 명령(생성기)이 없다. [kubernetes.io/docs](https://kubernetes.io/docs/concepts/services-networking/network-policies/)의 최소 뼈대를 복사해 `podSelector`와 `policyTypes`만 채운다(dry-run으로 뽑을 수 없음).
 
 ```yaml
 # quarantine.yaml — student 터미널에서 apply

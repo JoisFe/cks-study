@@ -40,6 +40,8 @@ docker inspect nginx:1.25.3            # ENV, USER, ENTRYPOINT 등 메타데이�
 
 **Before — 나쁜 예 (시험에 이런 Dockerfile이 주어진다):**
 
+> **🛠 만드는 법** — Dockerfile은 kubectl 리소스가 아니다 → dry-run 생성 대상이 아니다. 시험에선 주어진 Dockerfile(또는 docs.docker.com 예제)을 열어 요구 항목만 편집한다.
+
 ```dockerfile
 FROM ubuntu:latest
 RUN apt-get update && apt-get install -y golang git curl vim
@@ -264,6 +266,8 @@ kube-apiserver의 admission 단계에서 **외부 웹훅 서버에게 "이 이�
 
 1. **AdmissionConfiguration 파일** — admission 플러그인별 설정 진입점:
 
+> **🛠 만드는 법** — 이 파일들(AdmissionConfiguration·아래 kubeconf)은 kubectl 리소스가 아니라 apiserver가 읽는 설정 파일 → dry-run 생성이 없다. kubernetes.io/docs의 예제 뼈대를 복사해 경로·`defaultAllow` 등만 채운다.
+
 ```yaml
 apiVersion: apiserver.config.k8s.io/v1
 kind: AdmissionConfiguration
@@ -333,6 +337,8 @@ users:
 v1.30에서 GA된 ValidatingAdmissionPolicy는 **웹훅 서버 없이** apiserver 내장 CEL(Common Expression Language — 정책 조건을 기술하는 표현식 언어) 엔진으로 리소스를 검증한다. 외부 의존성이 없어 ImagePolicyWebhook보다 간단하고, "특정 레지스트리 이미지만 허용" 같은 정책에 적합하다. (OPA Gatekeeper도 같은 목적의 도구지만 CKS에서는 참고 수준으로만 알아두면 된다.)
 
 **Policy — 검증 규칙 정의:**
+
+> **🛠 만드는 법** — ValidatingAdmissionPolicy·Binding은 `kubectl create` 생성기가 없다(dry-run 뼈대 불가) → kubernetes.io/docs 예제 YAML을 복사해 CEL 표현식·matchConstraints를 채운다. Policy와 Binding은 항상 쌍으로 만든다.
 
 ```yaml
 apiVersion: admissionregistration.k8s.io/v1
@@ -525,6 +531,8 @@ kubesec scan /opt/course/m4/pod.yaml          # score와 critical 확인
 cp /opt/course/m4/pod.yaml /opt/course/m4/pod-fixed.yaml
 vim /opt/course/m4/pod-fixed.yaml
 ```
+
+> **🛠 만드는 법** — Pod는 생성기가 있다: 빈 뼈대가 필요하면 `k run web --image=nginx:1.25.3-alpine $do > pod.yaml` 로 뽑아 securityContext를 채운다. (`$do`=`--dry-run=client -o yaml`, 시험 세팅 변수)
 
 ```yaml
 apiVersion: v1
