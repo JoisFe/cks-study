@@ -27,11 +27,11 @@ CKS(Certified Kubernetes Security Specialist) 시험의 규정·환경·전략�
 | 시험 시간 | **2시간 (120분)** |
 | 문항 수 | 15~20개 hands-on 과제 (보통 **16개**) |
 | 합격선 | **67%** |
-| 응시 전제조건 | **유효한 CKA 자격** 보유 (만료된 CKA로는 응시 불가) |
+| 응시 전제조건 | **유효한 CKA 자격**(Certified Kubernetes Administrator — CKS 응시에 필요한 선행 자격) 보유 (만료된 CKA로는 응시 불가) |
 | 자격 유효기간 | **2년** |
 | 재시험 | 무료 재시험(retake) **1회** 포함 |
 | 시험 형식 | 100% 실습형. 원격 감독(proctored) 온라인 시험 |
-| 시험 환경 | PSI Secure Browser 원격 데스크톱(XFCE) + 터미널 + Firefox(허용 문서만) |
+| 시험 환경 | PSI Secure Browser 원격 데스크톱(XFCE — 경량 리눅스 데스크톱 환경) + 터미널 + Firefox(허용 문서만) |
 | Kubernetes 버전 | **v1.35** (containerd 런타임, Ubuntu 노드) |
 | 부분 점수 | 있음. 한 문제 안의 하위 작업별로 채점됨 |
 
@@ -59,9 +59,9 @@ CKS(Certified Kubernetes Security Specialist) 시험의 규정·환경·전략�
 | 구분 | 개편 전 (2024-10-15 이전) | 개편 후 (현행) |
 |---|---|---|
 | Pod 보안 | PodSecurityPolicy(PSP) 중심 | **PSP 완전 삭제** (v1.25에서 제거됨) → Pod Security Admission(PSA) 라벨 |
-| pod 간 암호화 | 커리큘럼에 없음 | **Cilium(WireGuard/IPsec) / Istio(mTLS) pod-to-pod 암호화** 추가 |
-| SBOM | 커리큘럼에 없음 | **SBOM 생성/분석 (bom, trivy)** 추가 |
-| 정적 분석 | 명시적 도구 없음 | **Kubesec, KubeLinter** 추가 |
+| pod 간 암호화 | 커리큘럼에 없음 | **Cilium(WireGuard/IPsec) / Istio(mTLS — 양쪽이 서로 인증서로 인증하는 TLS) pod-to-pod 암호화** 추가 |
+| SBOM | 커리큘럼에 없음 | **SBOM(Software Bill of Materials — 이미지에 포함된 소프트웨어·의존성 명세) 생성/분석**(bom — SBOM 생성 도구, trivy — 이미지 취약점 스캐너) 추가 |
+| 정적 분석 | 명시적 도구 없음 | **Kubesec, KubeLinter**(YAML·매니페스트의 보안 설정을 검사하는 정적 분석 도구) 추가 |
 | 폐기 기능 전반 | 구버전 기능 잔존 | v1.25+에서 제거된 기능 관련 내용 일괄 삭제 |
 
 ### 2026-07 현재 상태
@@ -69,7 +69,7 @@ CKS(Certified Kubernetes Security Specialist) 시험의 규정·환경·전략�
 - **2024-10-15 개편 이후 지금까지 도메인 구성과 가중치 변동 없음.** 아래 3장의 표가 현행 커리큘럼이다.
 - 다만 **시험 환경의 Kubernetes 버전은 계속 최신을 따라간다**: 새 마이너 버전이 릴리스되면 **4~8주 내**에 시험 환경에 반영된다. 현재는 v1.35 기반.
 
-> **💡 시험 팁 — 버전 추종 대응법**: kubernetes.io 문서를 항상 최신 버전 기준으로 학습하라. 특히 GA 전환된 기능(AppArmor `securityContext.appArmorProfile`은 v1.30+ GA, ValidatingAdmissionPolicy는 v1.30 GA)은 구식 방법(annotation 방식 AppArmor 등)이 아닌 **현행 방식**으로 답해야 한다. 시험 예약 전에 시험 환경 버전을 공식 페이지에서 한 번 확인하는 습관을 들여라.
+> **💡 시험 팁 — 버전 추종 대응법**: kubernetes.io 문서를 항상 최신 버전 기준으로 학습하라. 특히 GA(General Availability — 정식 기능으로 안정화됨) 전환된 기능(AppArmor(리눅스 커널 강제접근제어 — 프로세스의 파일·자원 접근을 프로파일로 제한) `securityContext.appArmorProfile`은 v1.30+ GA, ValidatingAdmissionPolicy(웹훅 없이 API 서버가 규칙식으로 요청을 검증·거부하는 내장 정책)는 v1.30 GA)은 구식 방법(annotation 방식 AppArmor 등)이 아닌 **현행 방식**으로 답해야 한다. 시험 예약 전에 시험 환경 버전을 공식 페이지에서 한 번 확인하는 습관을 들여라.
 
 ---
 
@@ -77,12 +77,12 @@ CKS(Certified Kubernetes Security Specialist) 시험의 규정·환경·전략�
 
 | 도메인 | 가중치 | 실제로 나오는 과제 유형 |
 |---|---|---|
-| Cluster Setup | 15% | NetworkPolicy 작성(default-deny, 선택적 허용), kube-bench 실패 항목 Remediation 적용, Ingress TLS 설정, 바이너리 sha512sum 검증, 메타데이터 엔드포인트(169.254.169.254) 차단 |
-| Cluster Hardening | 15% | RBAC 최소권한 재구성, ServiceAccount 토큰 automount 차단, kube-apiserver 플래그 하드닝, kubeadm 클러스터 업그레이드, CSR로 사용자 인증서 발급 |
-| System Hardening | 10% | AppArmor/seccomp 프로파일 적용, kubelet 설정 하드닝, 노드의 불필요 서비스·패키지·포트 제거 |
-| Minimize Microservice Vulnerabilities | 20% | PSA 네임스페이스 라벨, Secrets encryption at rest(EncryptionConfiguration) + etcd 직접 확인, RuntimeClass(gVisor), Cilium/Istio pod 간 암호화, ValidatingAdmissionPolicy |
-| Supply Chain Security | 20% | Dockerfile 보안 결함 수정, trivy 이미지 스캔, SBOM 생성/분석(bom/trivy), cosign 서명·검증, Kubesec/KubeLinter 정적분석, 허용 레지스트리 제한 |
-| Monitoring, Logging & Runtime Security | 20% | Falco 룰 작성/오버라이드 + 출력 포맷 수정, Audit Policy 구성, 침해 흔적 조사(crictl, /proc, audit 로그), 컨테이너 불변성(readOnlyRootFilesystem) 적용 |
+| Cluster Setup | 15% | NetworkPolicy 작성(default-deny, 선택적 허용), kube-bench(CIS 벤치마크로 클러스터 설정을 점검하는 도구) 실패 항목 Remediation 적용, Ingress(외부에서 들어오는 HTTP 트래픽을 서비스로 라우팅하는 리소스) TLS(Transport Layer Security — 전송 구간 암호화) 설정, 바이너리 sha512sum 검증, 메타데이터 엔드포인트(169.254.169.254) 차단 |
+| Cluster Hardening | 15% | RBAC(Role-Based Access Control — 역할 기반 접근 제어) 최소권한 재구성, ServiceAccount 토큰 automount(파드에 SA 토큰을 자동 마운트하는 것) 차단, kube-apiserver 플래그 하드닝, kubeadm 클러스터 업그레이드, CSR(CertificateSigningRequest — 클러스터 CA에 인증서 서명을 요청하는 리소스)로 사용자 인증서 발급 |
+| System Hardening | 10% | AppArmor/seccomp(허용된 시스템콜만 통과시키는 커널 필터) 프로파일 적용, kubelet 설정 하드닝, 노드의 불필요 서비스·패키지·포트 제거 |
+| Minimize Microservice Vulnerabilities | 20% | PSA 네임스페이스 라벨, Secrets encryption at rest(EncryptionConfiguration — secret을 저장 시 암호화) + etcd(클러스터 상태·secret을 저장하는 키·값 저장소) 직접 확인, RuntimeClass(gVisor 등 샌드박스 런타임을 파드에 지정하는 리소스), Cilium/Istio pod 간 암호화, ValidatingAdmissionPolicy |
+| Supply Chain Security | 20% | Dockerfile 보안 결함 수정, trivy 이미지 스캔, SBOM 생성/분석(bom/trivy), cosign(컨테이너 이미지에 서명하고 서명을 검증하는 도구) 서명·검증, Kubesec/KubeLinter 정적분석, 허용 레지스트리 제한 |
+| Monitoring, Logging & Runtime Security | 20% | Falco(런타임에 비정상 행위를 탐지하는 도구) 룰 작성/오버라이드 + 출력 포맷 수정, Audit Policy(API 서버 감사 로그의 기록 범위를 정하는 정책) 구성, 침해 흔적 조사(crictl, /proc, audit 로그), 컨테이너 불변성(readOnlyRootFilesystem) 적용 |
 
 > **📌 암기 포인트**: 뒤의 세 도메인(20% × 3 = 60%)이 승부처다. 특히 Falco와 Audit Policy, Supply Chain 도구 체인(trivy/bom/cosign)은 사실상 매 시험 출제된다고 보면 된다.
 

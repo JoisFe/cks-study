@@ -54,7 +54,7 @@ Read these instructions carefully before starting. They mirror the tone of the r
 
 | Context | Control Plane | Worker | 특이사항 / 주요 용도 |
 |---------|---------------|--------|----------------------|
-| `k8s-s1` | `cks-master1` | `cks-worker1` | CNI: Cilium. NetworkPolicy, RBAC, Secrets, ValidatingAdmissionPolicy, Audit 분석 |
+| `k8s-s1` | `cks-master1` | `cks-worker1` | CNI(Container Network Interface — 파드 네트워크를 구현하는 플러그인 규격): Cilium. NetworkPolicy, RBAC, Secrets, ValidatingAdmissionPolicy, Audit 분석 |
 | `k8s-s2` | `cks-master2` | `cks-worker2` | 노드 하드닝 전용: etcd, kubelet, seccomp, SSH, Falco(worker2에 설치) |
 | `k8s-s3` | `cks-master3` | `cks-worker3` | Istio 설치됨. mTLS, Supply Chain(bom, kubesec) |
 
@@ -239,7 +239,7 @@ Write the final state of the four checks to `/opt/course/3/etcd-flags.txt` on `c
 
 **1) 접근 방법**
 
-kube-bench의 etcd 섹션(CIS 2.x)에 해당하는 문제다. static pod manifest에서 플래그를 확인하고, 누락/오설정을 고친 뒤 kubelet이 etcd pod를 재생성할 때까지 기다린다.
+kube-bench(CIS 벤치마크 준수를 자동 점검하는 도구)의 etcd 섹션(CIS 2.x)에 해당하는 문제다. 여기서 CIS(Center for Internet Security)는 보안 설정 벤치마크 표준을 발행하는 기관이다. static pod manifest에서 플래그를 확인하고, 누락/오설정을 고친 뒤 kubelet이 etcd pod를 재생성할 때까지 기다린다.
 
 **2) 단계별 명령어/YAML**
 
@@ -324,7 +324,7 @@ Create a new user `sara` who must be able to `get`, `list` and `watch` Pods in n
 
 **1) 접근 방법**
 
-인증서 기반 사용자 생성의 정석 4단계: openssl로 key/CSR → CSR 오브젝트(`signerName: kubernetes.io/kube-apiserver-client`) 제출·승인 → RBAC 부여 → kubeconfig 등록. 인증서의 CN이 곧 사용자 이름이 된다.
+인증서 기반 사용자 생성의 정석 4단계: openssl로 key/CSR(CertificateSigningRequest — 인증서 서명 요청) → CSR 오브젝트(`signerName: kubernetes.io/kube-apiserver-client`) 제출·승인 → RBAC(Role-Based Access Control — 역할 기반 접근제어) 부여 → kubeconfig 등록. 인증서의 CN이 곧 사용자 이름이 된다.
 
 **2) 단계별 명령어/YAML**
 
@@ -702,7 +702,7 @@ Istio is installed in cluster `k8s-s3`. Namespace `pay` runs workloads with Envo
 
 **1) 접근 방법**
 
-네임스페이스 단위 mTLS 강제는 PeerAuthentication 리소스 하나로 끝난다. `STRICT`는 sidecar 간 mTLS 트래픽만 허용하므로, sidecar 없는 pod의 평문 요청은 연결 단계에서 거부된다.
+네임스페이스 단위 mTLS(mutual TLS — 클라이언트·서버가 서로 인증서로 검증하는 상호 TLS) 강제는 PeerAuthentication 리소스 하나로 끝난다. `STRICT`는 sidecar 간 mTLS 트래픽만 허용하므로, sidecar 없는 pod의 평문 요청은 연결 단계에서 거부된다.
 
 **2) 단계별 명령어/YAML**
 
@@ -942,7 +942,7 @@ Work on the main terminal, where the `bom` tool is installed.
 
 **1) 접근 방법**
 
-SBOM 생성은 `bom generate`, 내용 확인은 `bom document outline`이다. SPDX tag-value 문서에서 특정 패키지 버전은 outline 출력이나 파일 grep으로 찾는다. 시험 중 문서는 `kubernetes-sigs.github.io/bom/cli-reference/`가 허용된다.
+SBOM(Software Bill of Materials — 이미지에 포함된 소프트웨어 구성요소 목록) 생성은 `bom generate`, 내용 확인은 `bom document outline`이다. SPDX(Software Package Data Exchange — 리눅스재단 표준 SBOM 포맷) tag-value 문서에서 특정 패키지 버전은 outline 출력이나 파일 grep으로 찾는다. 시험 중 문서는 `kubernetes-sigs.github.io/bom/cli-reference/`가 허용된다.
 
 **2) 단계별 명령어/YAML**
 
@@ -976,7 +976,7 @@ cat /opt/course/12/openssl-version.txt   # 버전 문자열만 한 줄
 - 이미지 SBOM 생성은 `--image` 플래그다. 로컬 디렉토리(`--dirs`)나 파일과 혼동하지 말 것.
 - 이미지 pull이 필요하므로 첫 실행은 시간이 걸린다. 기다리는 동안 다른 문제를 진행하라.
 - "버전 문자열만" 제출하라는 지시를 지켜라. `openssl 3.x.y` 전체 라인을 넣으면 감점될 수 있다.
-- 변형 문제로 **trivy 기반 SBOM**(`trivy image --format spdx-json --output 파일 이미지`)과 취약점 스캔(`trivy image --severity CRITICAL,HIGH 이미지`)도 같이 연습해 두라.
+- 변형 문제로 **trivy 기반 SBOM**(trivy = 컨테이너 이미지 취약점 스캐너; `trivy image --format spdx-json --output 파일 이미지`)과 취약점 스캔(`trivy image --severity CRITICAL,HIGH 이미지`)도 같이 연습해 두라.
 
 **예상 소요시간:** 7분 | **부분점수 포인트:** SBOM 파일 생성(형식 SPDX) → outline 사용 → 버전 파일 정확성.
 
@@ -1073,7 +1073,7 @@ jq '.[0].scoring.critical' /opt/course/13/report-after.json
 - `privileged: true` 같은 critical 항목은 점수를 크게 깎는다. **critical을 먼저 전부 제거**하는 것이 최우선.
 - kubesec 바이너리가 없으면 API 방식도 가능: `curl -sSX POST --data-binary @pod.yaml https://v2.kubesec.io/scan` (시험 환경에서는 로컬 바이너리가 기본).
 - before 리포트를 저장하기 **전에** 파일을 고치면 전후 비교 증빙이 사라진다. 순서를 지켜라.
-- 같은 계열 도구로 **KubeLinter**(`kube-linter lint 파일`)도 출제 범위다. 명령 형태만 기억해 두면 된다.
+- 같은 계열 도구로 **KubeLinter**(쿠버네티스 매니페스트 정적분석 도구; `kube-linter lint 파일`)도 출제 범위다. 명령 형태만 기억해 두면 된다.
 
 **예상 소요시간:** 7분 | **부분점수 포인트:** before 리포트 → manifest 수정(critical 제거/advise 반영) → after 리포트·점수 향상.
 
@@ -1102,7 +1102,7 @@ Save both manifests to `/opt/course/14/`.
 
 **1) 접근 방법**
 
-ValidatingAdmissionPolicy(v1.30 GA)는 CEL 표현식으로 어드미션 검증을 선언하는 in-tree 기능이다. Policy(검증 로직)와 Binding(적용 대상)을 분리해 만든다. 외부 컨트롤러가 필요한 OPA Gatekeeper와 달리 추가 설치가 없다.
+ValidatingAdmissionPolicy(v1.30 GA)는 CEL(Common Expression Language — 쿠버네티스에 내장된 정책 표현식 언어) 표현식으로 어드미션 검증을 선언하는 in-tree 기능이다. Policy(검증 로직)와 Binding(적용 대상)을 분리해 만든다. 외부 컨트롤러가 필요한 OPA(Open Policy Agent) Gatekeeper와 달리 추가 설치가 없다.
 
 **2) 단계별 명령어/YAML**
 
@@ -1374,18 +1374,18 @@ kubectl auth can-i --list -n prod \
 - [ ] 답안 파일 경로(`/opt/course/N/...`)와 **파일이 위치할 호스트**(main terminal vs 노드)를 문제에서 재확인
 - [ ] static pod(manifest) 수정 전 `/tmp`로 백업, 수정 후 30초~1분 대기, 안 뜨면 `crictl ps -a` + `journalctl -u kubelet`
 - [ ] NetworkPolicy: `policyTypes` 명시, egress에는 DNS(UDP/TCP 53) 허용 여부 검토, namespaceSelector+podSelector의 AND/OR 구분
-- [ ] PSA 라벨 형식 암기: `pod-security.kubernetes.io/enforce=restricted` (모드 enforce/audit/warn, 레벨 privileged/baseline/restricted, `enforce-version`으로 버전 고정)
-- [ ] AppArmor는 v1.30+ GA 필드 `securityContext.appArmorProfile` (RuntimeDefault/Localhost/Unconfined) — 과거 annotation 방식은 deprecated
+- [ ] PSA(Pod Security Admission — 네임스페이스 라벨로 파드 보안 수준을 강제하는 내장 어드미션) 라벨 형식 암기: `pod-security.kubernetes.io/enforce=restricted` (모드 enforce/audit/warn, 레벨 privileged/baseline/restricted, `enforce-version`으로 버전 고정)
+- [ ] AppArmor(프로그램별 파일·기능 접근을 제한하는 리눅스 강제접근제어 프로파일)는 v1.30+ GA 필드 `securityContext.appArmorProfile` (RuntimeDefault/Localhost/Unconfined) — 과거 annotation 방식은 deprecated
 - [ ] seccomp `localhostProfile`은 `/var/lib/kubelet/seccomp/` 기준 **상대경로**
 - [ ] kubelet 하드닝 4종: anonymous false / webhook true / authorization Webhook / readOnlyPort 0 → `systemctl restart kubelet`
 - [ ] RBAC 위험 verb: `escalate`, `bind`, `impersonate`, `*` — 점검은 `kubectl auth can-i --list --as=system:serviceaccount:NS:SA`
 - [ ] ServiceAccount 토큰: `automountServiceAccountToken: false` (Pod 레벨이 SA 레벨보다 우선)
 - [ ] EncryptionConfiguration: providers **첫 항목으로 암호화**, `identity: {}` 위치가 읽기 호환성 결정, 일괄 재암호화는 `kubectl get secrets -A -o json | kubectl replace -f -`
-- [ ] RuntimeClass(gVisor): `handler: runsc`, pod에 `runtimeClassName`, 검증은 pod 안 `dmesg`의 gVisor 문자열
+- [ ] RuntimeClass(파드가 쓸 컨테이너 런타임을 지정하는 리소스; 예로 gVisor = 사용자공간 격리 샌드박스 런타임): `handler: runsc`, pod에 `runtimeClassName`, 검증은 pod 안 `dmesg`의 gVisor 문자열
 - [ ] 바이너리 검증: `sha512sum` 출력과 공식 체크섬 `diff`
 - [ ] Audit Policy: 첫 매칭 룰 적용, apiserver에 policy 파일·로그 경로 **hostPath 마운트 추가** 잊지 않기
 - [ ] Falco 커스텀 룰은 `/etc/falco/falco_rules.local.yaml`에 같은 이름으로 오버라이드
-- [ ] cosign 서명/검증: `cosign sign --key cosign.key 이미지` / `cosign verify --key cosign.pub 이미지`
+- [ ] cosign(컨테이너 이미지 서명·검증 도구) 서명/검증: `cosign sign --key cosign.key 이미지` / `cosign verify --key cosign.pub 이미지`
 - [ ] Dockerfile 보안: 태그 고정(latest 금지), USER 비루트, 멀티스테이지, secret을 ENV/ARG에 넣지 않기
 - [ ] 허용 문서 북마크: kubernetes.io/docs, falco.org/docs, docs.cilium.io/en/stable, istio.io/latest/docs, etcd.io/docs, kubernetes-sigs.github.io/bom/cli-reference/
 

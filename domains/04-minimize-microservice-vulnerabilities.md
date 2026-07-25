@@ -22,7 +22,7 @@ Pod Security Admission, securityContext, Secrets와 Encryption at Rest, gVisor �
 
 ### 1.1 PSP는 죽었다, PSA가 현행이다
 
-PodSecurityPolicy(PSP)는 **v1.25에서 완전히 제거**되었다. 2024-10 커리큘럼 개편에서도 PSP는 삭제되었으므로 시험에 나오지 않는다. 현행 메커니즘은 **Pod Security Admission(PSA)** — kube-apiserver에 내장된 admission controller로, **네임스페이스 라벨**만으로 동작한다. 별도 설치나 CRD가 필요 없다.
+PodSecurityPolicy(PSP)는 **v1.25에서 완전히 제거**되었다. 2024-10 커리큘럼 개편에서도 PSP는 삭제되었으므로 시험에 나오지 않는다. 현행 메커니즘은 **Pod Security Admission(PSA)** — kube-apiserver에 내장된 admission controller(=파드 생성·수정 등 API 요청을 승인 전에 검증하거나 바꾸는 관문)로, **네임스페이스 라벨**만으로 동작한다. 별도 설치나 CRD(Custom Resource Definition — 쿠버네티스 API에 사용자 정의 리소스 타입을 추가하는 확장)가 필요 없다.
 
 PSA는 **Pod Security Standards(PSS)** 라는 3단계 보안 프로파일을 검사 기준으로 사용한다.
 
@@ -352,7 +352,7 @@ kubectl -n lion exec deploy/web-api -- id
 
 ### 3.1 base64는 암호화가 아니다
 
-Secret의 `data` 필드는 **base64 인코딩**일 뿐 암호화가 아니다. `kubectl get secret -o yaml` 권한이 있는 사람, etcd에 접근할 수 있는 사람, etcd 백업 파일을 손에 넣은 사람은 모두 값을 평문으로 복원할 수 있다. 그래서 CKS는 (1) RBAC로 secret 읽기 권한 최소화, (2) Encryption at Rest(4장)를 요구한다.
+Secret의 `data` 필드는 **base64 인코딩**일 뿐 암호화가 아니다. `kubectl get secret -o yaml` 권한이 있는 사람, etcd(클러스터 전체 상태를 저장하는 키-값 저장소)에 접근할 수 있는 사람, etcd 백업 파일을 손에 넣은 사람은 모두 값을 평문으로 복원할 수 있다. 그래서 CKS는 (1) RBAC(Role-Based Access Control — 역할에 권한을 묶어 사용자·서비스어카운트에 부여하는 접근 제어)로 secret 읽기 권한 최소화, (2) Encryption at Rest(4장)를 요구한다.
 
 ### 3.2 생성과 사용
 
@@ -756,7 +756,7 @@ kubectl get pod sandbox-test -o jsonpath='{.spec.runtimeClassName}'
 
 ### 6.1 Cilium 투명 암호화 — WireGuard / IPsec
 
-Cilium CNI는 노드 간 pod 트래픽을 **네트워크 계층에서 투명하게 암호화**할 수 있다. 애플리케이션이나 pod spec 수정이 전혀 필요 없다.
+Cilium CNI(Container Network Interface — 파드 간 네트워크를 구현하는 플러그인 규격, Calico·Cilium 등)는 노드 간 pod 트래픽을 **네트워크 계층에서 투명하게 암호화**할 수 있다. 애플리케이션이나 pod spec 수정이 전혀 필요 없다.
 
 - **WireGuard**: 노드마다 키가 자동 생성/교환되어 설정이 단순. 시험 환경에서 만날 가능성이 높은 쪽.
 - **IPsec**: 키를 Kubernetes secret(`cilium-ipsec-keys`)으로 관리, 키 로테이션 지원.

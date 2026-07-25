@@ -30,7 +30,7 @@
 
 ### 1.1 아키텍처와 설치 형태
 
-Falco는 **커널 이벤트(syscall) 기반 런타임 위협 탐지 도구**다. 커널 모듈 또는 eBPF probe가 노드에서 발생하는 모든 syscall 스트림을 가로채고, 유저스페이스의 Falco 데몬이 이를 **룰(rule)의 condition과 대조**해 매칭되면 output 포맷대로 알림을 낸다. 컨테이너 런타임(containerd)과 Kubernetes 메타데이터를 결합해 "어느 네임스페이스의 어느 pod에서" 일어났는지까지 붙여준다.
+Falco는 **커널 이벤트(syscall) 기반 런타임 위협 탐지 도구**다. 커널 모듈 또는 eBPF(extended Berkeley Packet Filter — 커널 안에서 안전하게 프로그램을 실행시키는 기술) probe가 노드에서 발생하는 모든 syscall 스트림을 가로채고, 유저스페이스의 Falco 데몬이 이를 **룰(rule)의 condition과 대조**해 매칭되면 output 포맷대로 알림을 낸다. 컨테이너 런타임(containerd)과 Kubernetes 메타데이터를 결합해 "어느 네임스페이스의 어느 pod에서" 일어났는지까지 붙여준다.
 
 시험에서 중요한 사실:
 
@@ -340,7 +340,7 @@ systemctl is-active falco    # active 여야 함
 
 ## 2. 공격 단계 조사 (Incident Investigation)
 
-공격 킬체인 관점에서 Kubernetes 침해는 대개 이 순서로 흔적을 남긴다: **침투(취약 이미지/노출된 대시보드) → 실행(컨테이너 안 쉘, 악성 바이너리) → 권한 상승(privileged, hostPath) → 지속화(새 워크로드/CronJob, ServiceAccount 토큰 탈취) → 탐색·유출(metadata endpoint, 네트워크 스캔)**. 시험에서는 이 중 한 장면을 주고 "찾아서, 증거를 보존하고, 격리/제거하라"고 한다.
+공격 킬체인 관점에서 Kubernetes 침해는 대개 이 순서로 흔적을 남긴다: **침투(취약 이미지/노출된 대시보드) → 실행(컨테이너 안 쉘, 악성 바이너리) → 권한 상승(privileged, hostPath) → 지속화(새 워크로드/CronJob, ServiceAccount 토큰 탈취 — ServiceAccount는 파드가 API에 인증할 때 쓰는 쿠버네티스 신원) → 탐색·유출(metadata endpoint, 네트워크 스캔)**. 시험에서는 이 중 한 장면을 주고 "찾아서, 증거를 보존하고, 격리/제거하라"고 한다.
 
 ### 의심 워크로드 식별 (kubectl 레벨)
 
@@ -644,7 +644,7 @@ ls /var/log/pods/kube-system_kube-apiserver-*/   # 컨테이너 로그 직접 �
 
 ### 4.4 로그 분석 jq 레시피
 
-audit 로그는 JSON Lines 형식이다. 한 이벤트의 주요 필드: `.user.username`, `.verb`, `.objectRef.resource/.namespace/.name/.subresource`, `.responseStatus.code`, `.requestReceivedTimestamp`, `.sourceIPs`.
+audit 로그는 JSON Lines(한 줄에 이벤트 하나씩 담는 JSON) 형식이다. 한 이벤트의 주요 필드: `.user.username`, `.verb`, `.objectRef.resource/.namespace/.name/.subresource`, `.responseStatus.code`, `.requestReceivedTimestamp`, `.sourceIPs`.
 
 ```bash
 LOG=/etc/kubernetes/audit/audit.log

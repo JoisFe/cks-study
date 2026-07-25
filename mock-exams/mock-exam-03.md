@@ -311,7 +311,7 @@ Harden the API server on `master1` and prove the effect of the `NodeRestriction`
 
 **1) 접근 방법**
 
-`NodeRestriction`은 Node authorizer와 함께 동작해, `system:node:<nodeName>` 신원으로 인증된 kubelet이 **자기 노드 객체만** 수정하도록 제한한다. 다른 노드의 라벨을 바꾸려 하면 admission 단계에서 거부된다. apiserver 플래그 `--enable-admission-plugins`에 `NodeRestriction`을 추가한 뒤, worker1의 kubelet kubeconfig로 master1 라벨 변경을 시도해 거부를 증명한다.
+`NodeRestriction`은 Node authorizer와 함께 동작해, `system:node:<nodeName>` 신원으로 인증된 kubelet이 **자기 노드 객체만** 수정하도록 제한한다. 다른 노드의 라벨을 바꾸려 하면 admission(API 요청이 인증·인가를 통과한 뒤 저장 직전에 거치는 검증·변경 관문) 단계에서 거부된다. apiserver 플래그 `--enable-admission-plugins`에 `NodeRestriction`을 추가한 뒤, worker1의 kubelet kubeconfig로 master1 라벨 변경을 시도해 거부를 증명한다.
 
 **2) 단계별 풀이**
 

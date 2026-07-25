@@ -23,7 +23,7 @@
 
 컨테이너 이미지는 Dockerfile의 각 명령(`FROM`, `RUN`, `COPY` 등)이 만든 레이어의 적층이다. 레이어에 들어간 것은 **다음 레이어에서 지워도 이미지 히스토리에 남는다**. 즉:
 
-- 빌드 도구(gcc, go, git), 패키지 매니저 캐시, 디버깅 유틸리티(curl, vim)가 최종 이미지에 남아 있으면 그만큼 CVE 노출 면적이 커진다.
+- 빌드 도구(gcc, go, git), 패키지 매니저 캐시, 디버깅 유틸리티(curl, vim)가 최종 이미지에 남아 있으면 그만큼 CVE(Common Vulnerabilities and Exposures — 공개된 보안 취약점에 부여되는 고유 식별자) 노출 면적이 커진다.
 - `ENV`/`ARG`/`COPY`로 들어간 secret은 `docker history`, `docker inspect`로 그대로 노출된다. 뒤 레이어에서 `rm` 해도 소용없다.
 - 베이스 이미지가 클수록(ubuntu 전체 > alpine > distroless > scratch) 취약점 수도 비례해서 많다.
 
@@ -153,7 +153,7 @@ SBOM(Software Bill of Materials)은 소프트웨어(여기서는 컨테이너 �
 
 ### bom으로 SBOM 생성/조회
 
-`bom`은 Kubernetes SIG Release가 만든 SPDX 전용 도구다. 문서는 시험 중 열람 허용 목록에 있다: `kubernetes-sigs.github.io/bom/cli-reference/`.
+`bom`은 Kubernetes SIG Release가 만든 SPDX(Software Package Data Exchange) 전용 도구다. 문서는 시험 중 열람 허용 목록에 있다: `kubernetes-sigs.github.io/bom/cli-reference/`.
 
 ```bash
 # 이미지에서 SPDX SBOM 생성
@@ -239,7 +239,7 @@ ls -l /opt/course/m2/sbom.spdx
 
 ### 서명이 공급망에서 중요한 이유
 
-레지스트리의 이미지 태그는 언제든 다른 내용으로 덮어써질 수 있다(태그는 가변 포인터다). 서명은 "이 이미지는 우리가 빌드한 그 바이트 그대로"임을 암호학적으로 보장한다. CI에서 빌드 → 서명 → 배포 시 검증(admission)으로 이어지는 체인이 공급망 보안의 골격이다.
+레지스트리의 이미지 태그는 언제든 다른 내용으로 덮어써질 수 있다(태그는 가변 포인터다). 서명은 "이 이미지는 우리가 빌드한 그 바이트 그대로"임을 암호학적으로 보장한다. CI에서 빌드 → 서명 → 배포 시 검증(admission — apiserver가 리소스를 저장하기 전 요청을 검사해 허용·거부·변경하는 단계)으로 이어지는 체인이 공급망 보안의 골격이다.
 
 ### cosign 기본 명령
 
@@ -330,7 +330,7 @@ users:
 
 ### ValidatingAdmissionPolicy (CEL) — 허용 레지스트리 강제의 현대적 방법
 
-v1.30에서 GA된 ValidatingAdmissionPolicy는 **웹훅 서버 없이** apiserver 내장 CEL 엔진으로 리소스를 검증한다. 외부 의존성이 없어 ImagePolicyWebhook보다 간단하고, "특정 레지스트리 이미지만 허용" 같은 정책에 적합하다. (OPA Gatekeeper도 같은 목적의 도구지만 CKS에서는 참고 수준으로만 알아두면 된다.)
+v1.30에서 GA된 ValidatingAdmissionPolicy는 **웹훅 서버 없이** apiserver 내장 CEL(Common Expression Language — 정책 조건을 기술하는 표현식 언어) 엔진으로 리소스를 검증한다. 외부 의존성이 없어 ImagePolicyWebhook보다 간단하고, "특정 레지스트리 이미지만 허용" 같은 정책에 적합하다. (OPA Gatekeeper도 같은 목적의 도구지만 CKS에서는 참고 수준으로만 알아두면 된다.)
 
 **Policy — 검증 규칙 정의:**
 
@@ -503,7 +503,7 @@ CI 관점: 두 도구 모두 종료코드로 성공/실패를 반환하므로 �
 | **kube-linter** | manifest 다수 / 디렉토리 / Helm 차트 | 체크 위반 목록 + Remediation | 배포 전 일괄 린트 |
 | **trivy** | 컨테이너 이미지, 파일시스템, SBOM, IaC | CVE 목록, SBOM | 취약점 스캔·SBOM 생성 |
 | **bom** | 컨테이너 이미지/디렉토리/파일 | SPDX SBOM | SBOM 생성·조회 |
-| **cosign** | 이미지(OCI 아티팩트) | 서명/검증 결과 | 아티팩트 서명·검증 |
+| **cosign** | 이미지(OCI 아티팩트 — Open Container Initiative 표준) | 서명/검증 결과 | 아티팩트 서명·검증 |
 
 > **📌 암기 포인트**: "manifest 점수 = kubesec, manifest 린트 = kube-linter, 이미지 CVE = trivy, SBOM = bom/trivy, 서명 = cosign". 문제 지문에 등장하는 도구 이름을 보고 즉시 스캔 대상을 떠올릴 수 있어야 한다.
 

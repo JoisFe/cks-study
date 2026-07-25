@@ -21,11 +21,11 @@
 
 ### 1.1 동작 원리 — CNI가 시행한다
 
-NetworkPolicy는 Kubernetes API 오브젝트일 뿐이며, 실제 트래픽 차단은 **CNI 플러그인**(Calico, Cilium 등)이 수행한다. NetworkPolicy를 지원하지 않는 CNI(예: flannel 단독)에서는 정책을 만들어도 아무 효과가 없다. 시험 클러스터는 항상 시행 가능한 CNI를 사용하므로 걱정할 필요는 없지만, "왜 정책이 안 먹히지?"라는 상황의 첫 번째 원인이 CNI라는 점은 알아두자.
+NetworkPolicy는 Kubernetes API 오브젝트(원하는 상태를 선언해 두는 설정)일 뿐이며, 실제 트래픽 차단은 **CNI**(Container Network Interface — 파드 간 네트워크를 실제로 구현하는 플러그인 규격, Calico·Cilium 등)가 수행한다. NetworkPolicy를 지원하지 않는 CNI(예: flannel 단독)에서는 정책을 만들어도 아무 효과가 없다. 시험 클러스터는 항상 시행 가능한 CNI를 사용하므로 걱정할 필요는 없지만, "왜 정책이 안 먹히지?"라는 상황의 첫 번째 원인이 CNI라는 점은 알아두자.
 
 동작 규칙 세 가지가 모든 문제의 출발점이다.
 
-1. **화이트리스트 모델**: 어떤 Pod가 NetworkPolicy에 의해 select되면, 해당 `policyTypes` 방향(Ingress/Egress)의 트래픽은 기본 차단되고 정책에 나열된 규칙만 허용된다.
+1. **화이트리스트 모델**: 어떤 Pod가 NetworkPolicy에 의해 select되면(셀렉터로 정책의 적용 대상이 되면), 해당 `policyTypes` 방향(**Ingress**=파드로 들어오는 트래픽, **Egress**=파드에서 나가는 트래픽)의 트래픽은 기본 차단되고 정책에 나열된 규칙만 허용된다.
 2. **합집합(additive)**: 같은 Pod를 select하는 정책이 여러 개면 허용 규칙은 모두 합쳐진다(OR). "차단 규칙"이라는 것은 존재하지 않는다 — 허용을 좁게 정의해서 차단을 만든다.
 3. **select되지 않은 Pod는 모든 트래픽 허용**: 정책이 하나도 걸리지 않은 Pod는 기본적으로 완전 개방 상태다.
 
@@ -150,7 +150,7 @@ ingress:
 
 ### 1.5 ipBlock과 except
 
-CIDR 기반 허용에 예외 대역을 뚫는 패턴. 메타데이터 차단(4장)의 핵심이기도 하다.
+CIDR(Classless Inter-Domain Routing — IP 대역을 접두 길이로 표기하는 방식, 예: 10.0.0.0/16) 기반 허용에 예외 대역을 뚫는 패턴. 메타데이터 차단(4장)의 핵심이기도 하다.
 
 ```yaml
 egress:
@@ -165,7 +165,7 @@ egress:
 
 ### 1.6 egress 정책의 필수 동반자 — DNS 허용
 
-egress를 잠그는 순간 DNS 질의(UDP/TCP 53)도 함께 막혀서 서비스명 해석이 실패한다. **egress 정책에는 거의 항상 DNS 허용을 추가**해야 한다.
+egress를 잠그는 순간 DNS(Domain Name System — 서비스·도메인 이름을 IP 주소로 해석) 질의(UDP/TCP 53)도 함께 막혀서 서비스명 해석이 실패한다. **egress 정책에는 거의 항상 DNS 허용을 추가**해야 한다.
 
 ```yaml
 # 간단형: 모든 목적지로 53 포트 허용 (to 생략 = 목적지 무제한, 포트만 제한)
@@ -454,7 +454,7 @@ kubectl get nodes                         # cluster2-node1 Ready 확인
 
 ### 3.1 개념
 
-Ingress에서 TLS를 종료(terminate)하려면 두 가지가 필요하다: ① `kubernetes.io/tls` 타입 Secret(`tls.crt` + `tls.key`), ② Ingress의 `spec.tls` 블록. 시험에서는 인증서/키 파일이 주어지거나 self-signed 인증서를 직접 만들게 한다.
+Ingress에서 TLS(Transport Layer Security)를 종료(terminate)하려면 두 가지가 필요하다: ① `kubernetes.io/tls` 타입 Secret(`tls.crt` + `tls.key`), ② Ingress의 `spec.tls` 블록. 시험에서는 인증서/키 파일이 주어지거나 self-signed 인증서를 직접 만들게 한다.
 
 ### 3.2 TLS Secret 생성
 
@@ -565,7 +565,7 @@ openssl x509 -in /opt/course/m3/cert.pem -noout -subject     # 비교용
 
 ### 4.1 왜 위험한가
 
-클라우드 노드는 링크로컬 주소 `169.254.169.254`에서 **인스턴스 메타데이터 서비스**(AWS IMDS, GCP/Azure metadata server)를 제공한다. 여기에는 노드 IAM 역할의 임시 자격 증명, 부트스트랩 토큰, 사용자 데이터 스크립트 등이 들어 있다. 기본 상태에서는 **모든 Pod가 이 주소에 접근 가능**하므로, 컨테이너 하나만 침해되어도(예: SSRF 취약점) 공격자가 다음 한 줄로 클라우드 계정 자격 증명을 탈취할 수 있다.
+클라우드 노드는 링크로컬 주소 `169.254.169.254`에서 **인스턴스 메타데이터 서비스**(AWS IMDS, GCP/Azure metadata server)를 제공한다. 여기에는 노드 IAM(Identity and Access Management — 클라우드의 자격·권한 관리 체계) 역할의 임시 자격 증명, 부트스트랩 토큰, 사용자 데이터 스크립트 등이 들어 있다. 기본 상태에서는 **모든 Pod가 이 주소에 접근 가능**하므로, 컨테이너 하나만 침해되어도(예: SSRF — Server-Side Request Forgery, 서버가 공격자 의도대로 내부 주소로 요청하게 만드는 취약점) 공격자가 다음 한 줄로 클라우드 계정 자격 증명을 탈취할 수 있다.
 
 ```bash
 curl http://169.254.169.254/latest/meta-data/iam/security-credentials/

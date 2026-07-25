@@ -74,7 +74,7 @@ There are two namespaces on cluster `k8s-c1`: `payment` and `data`. Namespace `p
 
 **1) 접근 방법**
 
-default-deny는 빈 `podSelector: {}`에 `policyTypes`로 Ingress/Egress를 모두 명시. 허용 정책은 `payment-api`만 선택해서 egress 두 갈래(DB, DNS)를 연다. namespace를 지정할 때는 기본 라벨 `kubernetes.io/metadata.name`을 쓰는 것이 가장 안전하다.
+default-deny는 빈 `podSelector: {}`에 `policyTypes`로 Ingress/Egress를 모두 명시. 허용 정책은 `payment-api`만 선택해서 egress 두 갈래(DB, DNS)를 연다. 여기서 DNS(Domain Name System)는 파드가 서비스명을 IP로 찾는 이름 해석이다. namespace를 지정할 때는 기본 라벨 `kubernetes.io/metadata.name`을 쓰는 것이 가장 안전하다.
 
 **2) 단계별 풀이**
 
@@ -628,7 +628,7 @@ Namespace `team-orange` must enforce the **restricted** Pod Security Standard.
 
 **1) 접근 방법**
 
-PSA는 네임스페이스 라벨로 동작한다: `pod-security.kubernetes.io/<모드>=<레벨>` (모드: enforce/audit/warn, 레벨: privileged/baseline/restricted, 버전 고정: `enforce-version`). restricted 통과 조건은 사실상 고정 세트다: `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `seccompProfile: RuntimeDefault`.
+PSA(Pod Security Admission — 파드를 미리 정의된 보안 표준에 맞춰 검사·차단하는 내장 admission 컨트롤러)는 네임스페이스 라벨로 동작한다: `pod-security.kubernetes.io/<모드>=<레벨>` (모드: enforce/audit/warn, 레벨: privileged/baseline/restricted, 버전 고정: `enforce-version`). restricted 통과 조건은 사실상 고정 세트다: `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `seccompProfile: RuntimeDefault`. (여기서 capabilities=리눅스 커널 권한을 잘게 나눈 단위, seccomp=컨테이너가 호출 가능한 시스템콜을 필터링하는 커널 기능.)
 
 **2) 단계별 풀이**
 
@@ -1293,7 +1293,7 @@ exit; exit
 | 틀린 Task | 취약 도메인 | 복습할 개념서 | 중점 복습 키워드 |
 |---|---|---|---|
 | T1, T2, T3 | Cluster Setup | `01-cluster-setup.md` | NetworkPolicy AND/OR, kube-bench Remediation, Ingress TLS |
-| T4, T5, T6 | Cluster Hardening | `02-cluster-hardening.md` | RBAC 위험 verb, automountServiceAccountToken, kubeadm 업그레이드 |
+| T4, T5, T6 | Cluster Hardening | `02-cluster-hardening.md` | RBAC(Role-Based Access Control — 역할 기반 접근 제어) 위험 verb, automountServiceAccountToken, kubeadm 업그레이드 |
 | T7, T8 | System Hardening | `03-system-hardening.md` | appArmorProfile 필드, apparmor_parser, ss/systemctl |
 | T9, T10, T11 | Minimize Microservice Vulnerabilities | `04-minimize-microservice-vulnerabilities.md` | PSA 라벨, EncryptionConfiguration provider 순서, RuntimeClass |
 | T12, T13, T14 | Supply Chain Security | `05-supply-chain-security.md` | trivy, Dockerfile 하드닝, ImagePolicyWebhook defaultAllow |

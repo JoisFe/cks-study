@@ -1,6 +1,6 @@
 # Domain 2 — Cluster Hardening (15%)
 
-클러스터에 들어오는 모든 요청의 통로인 Kubernetes API를 잠그는 도메인 — RBAC 최소권한, ServiceAccount 보안, API/kubelet 접근 제한, 인증서 사용자 관리, 그리고 CVE 대응을 위한 클러스터 업그레이드를 다룬다.
+클러스터에 들어오는 모든 요청의 통로인 Kubernetes API를 잠그는 도메인 — RBAC(Role-Based Access Control) 최소권한, ServiceAccount 보안, API/kubelet 접근 제한, 인증서 사용자 관리, 그리고 CVE(Common Vulnerabilities and Exposures — 공개된 보안 취약점에 부여되는 공식 식별자) 대응을 위한 클러스터 업그레이드를 다룬다.
 
 > **📌 시험 비중: 15% (16문제 기준 약 2~3문제).** RBAC와 ServiceAccount는 CKS 전 도메인을 통틀어 가장 확실하게 점수를 챙길 수 있는 영역이다. CKA에서 이미 익힌 내용의 "보안 관점 심화"이므로, 이 도메인에서 시간을 아껴 다른 도메인에 투자하는 전략이 유효하다.
 
@@ -290,9 +290,9 @@ kubectl exec batch-runner -n payment -- ls /var/run/secrets/kubernetes.io/servic
 
 | 단계 | 질문 | 메커니즘 |
 |---|---|---|
-| 1. Authentication | 너는 누구인가? | 클라이언트 인증서, SA 토큰(Bearer), OIDC 등 |
+| 1. Authentication | 너는 누구인가? | 클라이언트 인증서, SA 토큰(Bearer), OIDC(OpenID Connect — 외부 신원공급자 기반 인증 프로토콜) 등 |
 | 2. Authorization | 그 행동이 허용되는가? | RBAC, Node, Webhook |
-| 3. Admission Control | 요청을 변형/검증할까? | NodeRestriction, PSA, ValidatingAdmissionPolicy 등 |
+| 3. Admission Control | 요청을 변형/검증할까? | NodeRestriction, PSA(Pod Security Admission — 파드에 보안 표준을 강제하는 내장 어드미션), ValidatingAdmissionPolicy 등 |
 
 인증 실패 = **401 Unauthorized**, 인가 실패 = **403 Forbidden**. 이 구분이 익명 접근 테스트 해석의 핵심이다.
 
@@ -424,7 +424,7 @@ kubectl get node wk8s-node-1                 # Ready 유지 확인 (컨트롤플
 
 ## 4. 인증서 기반 사용자 생성 워크플로우
 
-Kubernetes에는 User 객체가 없다. 클러스터 CA가 서명한 클라이언트 인증서의 **CN(Common Name)이 사용자명, O(Organization)가 그룹**으로 해석된다. "새 개발자 alice에게 dev 네임스페이스 접근 권한을 부여하라"는 문제는 아래 6단계를 한 번에 수행하는 문제다.
+Kubernetes에는 User 객체가 없다. 클러스터 CA(Certificate Authority — 인증서를 발급·서명하는 인증 기관)가 서명한 클라이언트 인증서의 **CN(Common Name)이 사용자명, O(Organization)가 그룹**으로 해석된다. "새 개발자 alice에게 dev 네임스페이스 접근 권한을 부여하라"는 문제는 아래 6단계를 한 번에 수행하는 문제다.
 
 ### 4.1 전체 흐름 (6단계)
 
@@ -473,7 +473,7 @@ kubectl config use-context kubernetes-admin@kubernetes   # 원래 컨텍스트 �
 > **📌 암기 포인트**: `signerName: kubernetes.io/kube-apiserver-client` — 사용자용 클라이언트 인증서 서명자. kubelet serving 인증서용 `kubernetes.io/kubelet-serving`과 혼동하지 말 것. `usages`는 `client auth` 하나면 된다.
 
 > **⚠️ 함정**:
-> - `request` 필드에는 **CSR 파일**(.csr)의 base64를 넣는다. key나 crt를 넣으면 안 된다. `base64 -w0`으로 줄바꿈 없이.
+> - `request` 필드에는 **CSR**(Certificate Signing Request — 인증서 서명 요청) **파일**(.csr)의 base64를 넣는다. key나 crt를 넣으면 안 된다. `base64 -w0`으로 줄바꿈 없이.
 > - 승인 전 상태는 Pending — `kubectl certificate approve`를 잊으면 `.status.certificate`가 비어 있다.
 > - RBAC의 `--user=alice`는 인증서의 CN과 정확히 일치해야 한다.
 > - 검증 후 **관리자 컨텍스트로 복귀**하지 않으면 다음 문제를 권한 없는 사용자로 풀게 된다.

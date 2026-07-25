@@ -1,6 +1,6 @@
 # Domain 3 — System Hardening (시스템 하드닝)
 
-클러스터 노드(호스트 OS) 레벨의 공격면을 줄이는 도메인이다. 서비스/포트/패키지 정리, SSH·sudo 최소화, 방화벽, 그리고 CKS의 단골 주제인 **AppArmor**와 **seccomp** 프로파일 적용까지를 다룬다.
+클러스터 노드(호스트 OS) 레벨의 공격면을 줄이는 도메인이다. 서비스/포트/패키지 정리, SSH(Secure Shell — 암호화된 원격 접속 프로토콜)·sudo 최소화, 방화벽, 그리고 CKS의 단골 주제인 **AppArmor**(강제접근제어 프로파일 — 프로세스별 파일·기능 접근을 제한)와 **seccomp**(시스템콜 필터 — 프로세스가 호출 가능한 시스템콜을 제한) 프로파일 적용까지를 다룬다.
 
 > **📌 시험 비중: 10%** — 16문제 기준 대략 1~2문제. 비중은 작지만 AppArmor/seccomp는 매 시험 거의 빠지지 않고 출제되며, 절차가 정형화되어 있어 **연습만 해두면 확실히 점수를 가져가는 도메인**이다. 노드에 `ssh`로 들어가서 작업하는 문제가 대부분이므로, "노드 작업 → `exit` → base 터미널 복귀" 흐름에 익숙해져야 한다.
 
@@ -378,7 +378,7 @@ aa-status | grep k8s-deny-write
 
 ### 5.4 Pod 적용 — GA 방식 (v1.30+)
 
-v1.30부터 AppArmor는 GA가 되어 `securityContext.appArmorProfile` **필드**를 사용한다. Pod 레벨(모든 컨테이너 적용) 또는 컨테이너 레벨 모두 가능하다.
+v1.30부터 AppArmor는 GA(General Availability — 정식 안정화 단계)가 되어 `securityContext.appArmorProfile` **필드**를 사용한다. Pod 레벨(모든 컨테이너 적용) 또는 컨테이너 레벨 모두 가능하다.
 
 ```yaml
 apiVersion: v1
