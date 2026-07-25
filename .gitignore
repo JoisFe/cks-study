@@ -8,10 +8,6 @@
 # ========== Logs ==========
 *.log
 
-global-groovy.log
-soapui.log
-soapui-errors.log
-
 # ========== OS Generated (Mac / Windows) ==========
 .DS_Store
 .DS_Store?
@@ -21,11 +17,8 @@ soapui-errors.log
 ehthumbs.db
 Thumbs.db
 
-# ========== Java & Spring Boot (Build Outputs) ==========
-target/
-build/
-out/
-*.class
-*.jar
-*.war
-.gradle/
+# ========== Claude Code (local settings only) ==========
+# .claude/ 디렉토리 자체는 커밋하여 공유한다 (agents / skills / CLAUDE 설정).
+# 로컬 전용 설정 파일만 무시한다.
+.claude/settings.local.json
+CLAUDE.local.md
