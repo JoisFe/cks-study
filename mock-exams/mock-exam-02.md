@@ -81,9 +81,11 @@ Save the manifest you applied to `/opt/course/1/cilium-policy.yaml`.
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `docs.cilium.io/en/stable`에서 **`layer 4`** 검색 → **"Layer 4 Policies"** → `endpointSelector`/`fromEndpoints`/`toPorts` 뼈대를 복사해 라벨·포트를 채운다.
+
 **1) 접근 방법**
 
-CiliumNetworkPolicy는 표준 NetworkPolicy의 `podSelector` 대신 `endpointSelector`를 쓰고, 허용 대상은 `fromEndpoints`, 포트는 `toPorts`로 지정한다. Cilium은 화이트리스트 모델이므로 ingress 룰을 하나라도 걸면 명시하지 않은 트래픽은 자동 거부된다. 문서는 `docs.cilium.io/en/stable`에서 "Layer 4 Examples"를 검색하면 된다.
+CiliumNetworkPolicy는 표준 NetworkPolicy의 `podSelector` 대신 `endpointSelector`를 쓰고, 허용 대상은 `fromEndpoints`, 포트는 `toPorts`로 지정한다. Cilium은 화이트리스트 모델이므로 ingress 룰을 하나라도 걸면 명시하지 않은 트래픽은 자동 거부된다. 문서는 `docs.cilium.io/en/stable`에서 "Layer 4 Policies"를 검색하면 된다.
 
 **2) 단계별 명령어/YAML**
 
@@ -92,7 +94,7 @@ mkdir -p /opt/course/1
 vim /opt/course/1/cilium-policy.yaml
 ```
 
-> **🛠 만드는 법** — CiliumNetworkPolicy는 kubectl 생성기가 없다(dry-run 불가) → `docs.cilium.io`의 "Layer 4 Examples"에서 최소 뼈대를 복사해 `endpointSelector`/`fromEndpoints`/`toPorts`를 채운다.
+> **🛠 만드는 법** — CiliumNetworkPolicy는 kubectl 생성기가 없다(dry-run 불가) → `docs.cilium.io`의 "Layer 4 Policies"에서 최소 뼈대를 복사해 `endpointSelector`/`fromEndpoints`/`toPorts`를 채운다.
 
 ```yaml
 apiVersion: cilium.io/v2
@@ -162,6 +164,8 @@ Save the manifest to `/opt/course/2/netpol.yaml` and apply it.
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"** → egress `ipBlock`(cidr `0.0.0.0/0` + `except`) 예제를 복사해 메타데이터 IP를 제외한다.
 
 **1) 접근 방법**
 
@@ -240,6 +244,8 @@ Write the final state of the four checks to `/opt/course/3/etcd-flags.txt` on `c
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `etcd.io/docs`에서 **`security`** 검색 → **"Transport security model"** → `--client-cert-auth`·`--peer-client-cert-auth`·`--auto-tls`·`--peer-auto-tls` 플래그 의미를 확인한다(kube-bench는 허용 문서 8개에 없으니 CIS 항목·수정값은 미리 암기).
 
 **1) 접근 방법**
 
@@ -326,6 +332,8 @@ Create a new user `sara` who must be able to `get`, `list` and `watch` Pods in n
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`certificate signing request`** 검색 → **"Certificate Signing Requests"** → CSR 오브젝트 YAML·`signerName`·approve 흐름을 복사한다(Role/RoleBinding은 `kubectl create role/rolebinding`로 생성).
+
 **1) 접근 방법**
 
 인증서 기반 사용자 생성의 정석 4단계: openssl로 key/CSR(CertificateSigningRequest — 인증서 서명 요청) → CSR 오브젝트(`signerName: kubernetes.io/kube-apiserver-client`) 제출·승인 → RBAC(Role-Based Access Control — 역할 기반 접근제어) 부여 → kubeconfig 등록. 인증서의 CN이 곧 사용자 이름이 된다.
@@ -410,6 +418,8 @@ Restart the kubelet afterwards. Then verify on the node that `curl -sk https://l
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`kubelet authentication authorization`** 검색 → **"Kubelet authentication/authorization"** → anonymous·webhook·authorization mode·readOnlyPort 설정 항목을 확인한다.
+
 **1) 접근 방법**
 
 kubelet 하드닝 4종 세트는 전부 `/var/lib/kubelet/config.yaml` 한 파일에서 끝난다. 수정 후 `systemctl restart kubelet`을 잊지 않는 것이 핵심.
@@ -480,6 +490,8 @@ In namespace `ops` of cluster `k8s-s1`, several RoleBindings reference the Clust
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → RoleBinding이 ClusterRole을 참조하는 구조와 `subjects` 형식을 확인한다.
+
 **1) 접근 방법**
 
 RoleBinding이 ClusterRole을 참조하면 해당 네임스페이스 범위로 ClusterRole 권한이 부여된다. `roleRef.name`이 `cluster-admin`인 바인딩을 찾아 subject를 대조한 뒤 불필요한 것만 삭제한다.
@@ -544,6 +556,8 @@ A seccomp profile is provided at `/opt/course/7/audit.json` on node `cks-worker2
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`seccomp`** 검색 → **"Restrict a Container's Syscalls with seccomp"** → `seccompProfile` type `Localhost`·`localhostProfile` 상대경로 예제를 복사한다.
 
 **1) 접근 방법**
 
@@ -642,6 +656,8 @@ Additionally, the user `jane` must no longer be able to use `sudo`. Do **not** d
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — SSH(`sshd_config`)·sudo 하드닝은 허용 문서 8개에 없다 → `PermitRootLogin no`/`PasswordAuthentication no`·`sshd -t`·`deluser jane sudo` 명령을 미리 암기.
+
 **1) 접근 방법**
 
 `/etc/ssh/sshd_config`에서 두 지시어를 고치고 데몬을 재시작한다. sudo 제거는 Ubuntu에서 `sudo` 그룹 탈퇴 + sudoers 개별 항목 확인의 2단계.
@@ -709,6 +725,8 @@ Istio is installed in cluster `k8s-s3`. Namespace `pay` runs workloads with Envo
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `istio.io/latest/docs`에서 **`peer authentication`** 검색 → **"Authentication Policy"** 태스크 페이지 → `PeerAuthentication`의 `mtls.mode: STRICT` 예제를 복사한다.
 
 **1) 접근 방법**
 
@@ -781,6 +799,8 @@ kubectl config use-context k8s-s1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting secret data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → "Verify that data is encrypted" 섹션의 `etcdctl get`·`k8s:enc:` 판별법을 복사한다.
 
 **1) 접근 방법**
 
@@ -873,6 +893,8 @@ The Deployment must reach `Ready` state again. Mount writable `emptyDir` volumes
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → `runAsNonRoot`·`runAsUser`·`allowPrivilegeEscalation`·`readOnlyRootFilesystem`·`capabilities`·`seccompProfile` 필드 예제를 복사한다.
+
 **1) 접근 방법**
 
 pod 레벨(seccomp, runAsUser/runAsNonRoot)과 container 레벨(capabilities, readOnlyRootFilesystem, allowPrivilegeEscalation)을 나눠 적용한다. readOnlyRootFilesystem을 켜면 앱이 쓰는 경로가 전부 막히므로, 쓰기가 필요한 경로만 emptyDir로 뚫어주는 것이 컨테이너 불변성(immutability)의 정석이다.
@@ -954,6 +976,8 @@ Work on the main terminal, where the `bom` tool is installed.
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes-sigs.github.io/bom/cli-reference`에서 **`bom generate`** 검색 → **"bom generate"** / **"bom document outline"** → `--image`·`--output` 플래그와 outline 사용법을 확인한다.
+
 **1) 접근 방법**
 
 SBOM(Software Bill of Materials — 이미지에 포함된 소프트웨어 구성요소 목록) 생성은 `bom generate`, 내용 확인은 `bom document outline`이다. SPDX(Software Package Data Exchange — 리눅스재단 표준 SBOM 포맷) tag-value 문서에서 특정 패키지 버전은 outline 출력이나 파일 grep으로 찾는다. 시험 중 문서는 `kubernetes-sigs.github.io/bom/cli-reference/`가 허용된다.
@@ -1014,6 +1038,8 @@ A Pod manifest is provided at `/opt/course/13/pod.yaml` on the main terminal.
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — Kubesec(및 변형에 나오는 KubeLinter)은 허용 문서 8개에 없다 → `kubesec scan pod.yaml`·`jq '.[0].score'`와 critical/advise 개선 방향(runAsNonRoot·drop ALL·readOnlyRootFilesystem·resources)을 미리 암기.
 
 **1) 접근 방법**
 
@@ -1113,6 +1139,8 @@ Save both manifests to `/opt/course/14/`.
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`validating admission policy`** 검색 → **"Validating Admission Policy"** → `ValidatingAdmissionPolicy`/`...Binding` 뼈대와 CEL `expression`·`matchConstraints` 예제를 복사한다.
 
 **1) 접근 방법**
 
@@ -1215,6 +1243,8 @@ Falco is installed as a systemd service on node `cks-worker2`.
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`overriding rules`** 검색 → **"Overriding Rules"** → 같은 rule 이름으로 `output`만 교체하는 override 문법을 복사한다(필드 이름은 **"Supported Fields for Conditions and Outputs"** 참고).
+
 **1) 접근 방법**
 
 Falco는 `/etc/falco/falco_rules.local.yaml`에 **같은 rule 이름**으로 다시 정의하면 기본 룰을 오버라이드한다(local 파일이 나중에 로드됨). 기본 룰의 condition을 그대로 복사하고 output만 바꾸는 것이 안전하다.
@@ -1295,6 +1325,8 @@ An API server audit log is provided at `/opt/course/16/audit.log` on the main te
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"** → 감사 이벤트 구조(`objectRef`·`user`·`verb`·`requestReceivedTimestamp`)와 Policy 레벨을 확인한다(Role 수정은 `kubectl edit role`).
 
 **1) 접근 방법**
 

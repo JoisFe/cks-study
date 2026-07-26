@@ -41,6 +41,8 @@ System Hardening 문제의 전형적인 패턴은 다음 세 가지다.
 
 ### 2.1 실행 중인 서비스 찾기와 끄기
 
+> **📖 오픈북** — `systemctl`/systemd 서비스 관리는 허용 문서 8개에 없다 → `disable --now`·`mask`·`status <PID>` 등 명령을 미리 암기.
+
 ```bash
 # 실행 중인 서비스 나열
 systemctl list-units --type=service --state=running
@@ -62,6 +64,8 @@ systemctl disable --now suspicious.service
 
 ### 2.2 불필요 패키지 제거
 
+> **📖 오픈북** — `apt`/`dpkg` 패키지 관리는 허용 문서 8개에 없다 → `remove --purge`·`dpkg -S`·`apt list --installed` 등을 미리 암기.
+
 ```bash
 # 설치된 패키지 검색
 apt list --installed 2>/dev/null | grep -i nginx
@@ -78,6 +82,8 @@ apt autoremove -y
 ```
 
 ### 2.3 열린 포트와 프로세스 식별
+
+> **📖 오픈북** — `ss`/`lsof`/`/proc` 포트·프로세스 추적은 허용 문서 8개에 없다 → `ss -tlpn`·`/proc/<PID>/exe` 역추적 명령을 미리 암기.
 
 ```bash
 # LISTEN 중인 TCP 포트 + 프로세스 (가장 많이 쓰는 명령)
@@ -140,6 +146,8 @@ echo "evil-app.service" > /opt/course/m1/service.txt
 
 ### 3.1 리눅스 사용자/그룹 최소화
 
+> **📖 오픈북** — 리눅스 사용자/그룹 관리(`usermod`·`deluser`·`userdel`·`passwd -l`)는 허용 문서 8개에 없다 → 명령을 미리 암기.
+
 ```bash
 # 사용자 확인
 id jane
@@ -160,6 +168,8 @@ userdel -r attacker
 
 ### 3.2 sudo 최소화
 
+> **📖 오픈북** — `sudo`/`sudoers`(`visudo`·`sudo -l -U`·`/etc/sudoers.d/`)는 허용 문서 8개에 없다 → 명령과 확인 경로를 미리 암기.
+
 ```bash
 # sudo 그룹 멤버 확인
 getent group sudo
@@ -176,6 +186,8 @@ ls /etc/sudoers.d/
 > **⚠️ 함정**: sudo 권한은 `sudo` 그룹 멤버십뿐 아니라 `/etc/sudoers`와 `/etc/sudoers.d/*`의 개별 항목으로도 부여된다. "jane이 sudo를 못 쓰게 하라"는 문제면 **세 군데를 모두** 확인해야 한다.
 
 ### 3.3 SSH 하드닝
+
+> **📖 오픈북** — `sshd_config` 하드닝은 허용 문서 8개에 없다 → `PermitRootLogin no`·`PasswordAuthentication no`·`sshd -t` 재시작을 미리 암기.
 
 `/etc/ssh/sshd_config`에서 최소 두 가지는 암기 대상이다.
 
@@ -243,6 +255,8 @@ sshd -T | grep -E 'permitrootlogin|passwordauthentication'
 
 ### 4.1 ufw 기초
 
+> **📖 오픈북** — `ufw` 방화벽은 허용 문서 8개에 없다 → `allow`→`deny`→`enable` 순서와 규칙 명령을 미리 암기(22 허용 먼저).
+
 Ubuntu 노드에서는 `ufw`(Uncomplicated Firewall)로 간단히 처리한다.
 
 ```bash
@@ -266,6 +280,8 @@ ufw delete <번호>       # 규칙 삭제
 
 ### 4.2 iptables 최소 지식
 
+> **📖 오픈북** — `iptables`는 허용 문서 8개에 없다 → `-A INPUT ... -j DROP`·`-D INPUT <n>`·`-L --line-numbers`를 미리 암기.
+
 ```bash
 iptables -L INPUT -n --line-numbers
 
@@ -277,6 +293,8 @@ iptables -D INPUT <라인번호>
 ```
 
 ### 4.3 바인딩 인터페이스 점검
+
+> **📖 오픈북** — 바인드 주소 점검(`ss -tlpn`)은 허용 문서 8개에 없다 → `0.0.0.0` vs `127.0.0.1` 판독을 미리 암기.
 
 서비스가 `0.0.0.0`(모든 인터페이스)에 열려 있는지, `127.0.0.1`(로컬 전용)에만 열려 있는지 확인하는 습관을 들이자.
 
@@ -327,6 +345,8 @@ ufw enable
 
 ### 5.1 개념
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`apparmor`** 검색 → **"Restrict a Container's Access to Resources with AppArmor"** → 프로파일 로드/적용 흐름과 개요를 확인.
+
 AppArmor는 리눅스 LSM(Linux Security Module) 기반의 MAC(강제 접근 제어)로, **프로파일** 단위로 프로세스의 파일 접근/기능을 제한한다. Ubuntu 노드에서 기본 활성화되어 있으며, CKS에서는 "주어진 프로파일을 노드에 로드하고 Pod에 적용"하는 문제가 정형적으로 나온다.
 
 프로파일 모드:
@@ -361,6 +381,8 @@ profile k8s-deny-write flags=(attach_disconnected) {
 - 프로파일 이름(`k8s-deny-write`)이 Pod에서 참조하는 이름이다. 파일명이 아니라 **`profile` 뒤에 오는 이름**임에 주의.
 
 ### 5.3 호스트에서 로드/확인
+
+> **📖 오픈북** — `apparmor_parser`·`aa-status`는 호스트 도구라 허용 문서 8개에 상세가 없다 → 명령을 미리 암기(단, AppArmor 튜토리얼은 "프로파일이 노드에 로드돼 있어야 kubelet이 Pod를 수락"함을 명시).
 
 ```bash
 # 현재 로드된 프로파일과 모드 확인
@@ -432,6 +454,8 @@ Task: The AppArmor profile file `/home/candidate/profiles/k8s-deny-write` exists
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`apparmor`** 검색 → **"Restrict a Container's Access to Resources with AppArmor"** → `securityContext.appArmorProfile`(type: Localhost/localhostProfile) 예제 YAML 복사.
 
 1) **접근 방법**: 노드에서 `apparmor_parser`로 로드 → `aa-status` 확인 → base로 나와 GA 필드로 Pod 작성.
 
@@ -509,6 +533,8 @@ seccomp(secure computing mode)은 프로세스가 호출할 수 있는 **syscall
 
 ### 6.2 프로파일 배치 경로
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`seccomp`** 검색 → **"Restrict a Container's Syscalls with seccomp"** → 프로파일을 `/var/lib/kubelet/seccomp/`에 두고 `localhostProfile`을 상대경로로 쓰는 절 참고.
+
 kubelet은 seccomp 프로파일을 **`/var/lib/kubelet/seccomp/`** 아래에서 찾는다. Pod의 `localhostProfile`은 이 디렉토리 기준 **상대경로**다.
 
 ```bash
@@ -518,6 +544,8 @@ cp /home/candidate/audit.json /var/lib/kubelet/seccomp/profiles/audit.json
 ```
 
 ### 6.3 Pod 적용
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`seccomp`** 검색 → **"Restrict a Container's Syscalls with seccomp"** → `securityContext.seccompProfile`의 `Localhost`/`RuntimeDefault` 예제 YAML 복사.
 
 ```yaml
 apiVersion: v1
@@ -570,6 +598,8 @@ Task: Update the existing Deployment `api` in namespace `prod` so that all its c
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`seccomp`** 검색 → **"Restrict a Container's Syscalls with seccomp"** → `seccompProfile: {type: RuntimeDefault}`를 Pod 템플릿에 적용하는 예제 참고.
+
 1) **접근 방법**: Pod 템플릿의 `spec.securityContext`에 `seccompProfile` 추가(Pod 레벨이면 전 컨테이너 적용).
 
 2) **단계별 명령어**:
@@ -605,6 +635,8 @@ kubectl -n prod get pod -l app=api -o yaml | grep -A2 seccompProfile
 
 ### 7.1 커널 모듈 블랙리스트
 
+> **📖 오픈북** — 커널 모듈 차단(`modprobe`·`/etc/modprobe.d`)은 허용 문서 8개에 없다 → `blacklist <모듈>` + `install <모듈> /bin/true` 두 줄을 미리 암기.
+
 사용하지 않는 프로토콜 모듈(sctp, dccp 등)은 로드를 차단한다.
 
 ```bash
@@ -627,6 +659,8 @@ modprobe -r dccp
 > **📌 암기 포인트**: `blacklist 모듈`은 **별칭에 의한 자동 로드**만 막는다. `modprobe 모듈` 명시 호출까지 막으려면 `install 모듈 /bin/true` 줄을 함께 넣는다. 두 줄 다 쓰는 것이 정석.
 
 ### 7.2 위험 sysctl 정리
+
+> **📖 오픈북** — 노드 `/etc/sysctl.d` 하드닝 값(`kernel.dmesg_restrict` 등)은 허용 문서 8개에 없다 → 암기. (Pod 레벨 sysctl은 `kubernetes.io/docs` **`sysctl`** 검색 → **"Using sysctls in a Kubernetes Cluster"**에 있으나 이 절의 노드 하드닝과는 별개다.)
 
 노드의 커널 파라미터는 `/etc/sysctl.d/*.conf`로 영구 설정하고 `sysctl --system`으로 적용한다.
 
@@ -715,6 +749,8 @@ Task: A file `/home/candidate/profiles/very-secure` containing an AppArmor profi
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`apparmor`** 검색 → **"Restrict a Container's Access to Resources with AppArmor"** → `securityContext.appArmorProfile`(type: Localhost/localhostProfile) 예제 복사.
+
 1) **접근 방법**: 프로파일을 `/etc/apparmor.d/`로 복사(재부팅 대응) 후 `apparmor_parser` 로드 → base에서 Pod 작성.
 
 2) **단계별 명령어**:
@@ -779,6 +815,8 @@ Task: The Deployment `legacy-app` in namespace `legacy` uses the deprecated AppA
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`apparmor`** 검색 → **"Restrict a Container's Access to Resources with AppArmor"** → GA `securityContext.appArmorProfile` 필드 형식(type: Localhost/localhostProfile)으로 마이그레이션.
+
 1) **접근 방법**: 현재 매니페스트에서 annotation을 확인 → 삭제 → 컨테이너 `main`의 securityContext에 GA 필드 추가.
 
 2) **단계별 명령어**:
@@ -834,6 +872,8 @@ Task: A seccomp profile file exists at `/home/candidate/audit.json` on node `wk8
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`seccomp`** 검색 → **"Restrict a Container's Syscalls with seccomp"** → `Localhost` 타입 + `localhostProfile` 상대경로 예제 복사.
 
 1) **접근 방법**: `/var/lib/kubelet/seccomp/profiles/`에 배치 → `localhostProfile`에 상대경로 지정 → `nodeName`으로 노드 고정.
 
@@ -896,6 +936,8 @@ Task: The Deployment `web` in namespace `frontend` currently runs its containers
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`seccomp`** 검색 → **"Restrict a Container's Syscalls with seccomp"** → `seccompProfile: {type: RuntimeDefault}` 예제 복사.
+
 1) **접근 방법**: Pod 템플릿의 seccompProfile을 교체 → rollout 완료 후 exec로 증거 수집.
 
 2) **단계별 명령어**:
@@ -943,6 +985,8 @@ Task: On node `wk8s-node-1` something is listening on port `6666`.
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — `ss`/`systemctl`/`/proc` 포트·서비스 역추적은 허용 문서 8개에 없다 → 추적 체인과 `disable --now`를 미리 암기.
 
 1) **접근 방법**: `ss -tlpn` → PID → `/proc/PID/exe` → `systemctl status PID` 순으로 역추적.
 
@@ -992,6 +1036,8 @@ Task: On node `cks-node-2` an unnecessary package is running a web server listen
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — `dpkg -S`/`apt remove --purge` 패키지 정리는 허용 문서 8개에 없다 → 파일→패키지 역추적과 `--purge`를 미리 암기.
+
 1) **접근 방법**: 포트 → 프로세스 바이너리 → `dpkg -S`로 패키지 역추적 → 서비스 중지 → `apt remove --purge`.
 
 2) **단계별 명령어**:
@@ -1036,6 +1082,8 @@ Task: On node `wk8s-node-1`:
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — `sshd_config`/`sudo` 하드닝은 허용 문서 8개에 없다 → 두 지시어와 sudo 회수 3경로(그룹/sudoers/sudoers.d)를 미리 암기.
 
 1) **접근 방법**: `sshd_config` 두 줄 수정 + 재시작, jane의 sudo 경로 3곳(sudo 그룹 / sudoers / sudoers.d) 점검 후 제거.
 
@@ -1089,6 +1137,8 @@ Task: On node `cks-node-2`, the kernel modules `sctp` and `dccp` must never be l
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — 커널 모듈 차단(`/etc/modprobe.d`)은 허용 문서 8개에 없다 → `blacklist` + `install <모듈> /bin/true` 두 줄을 미리 암기.
 
 1) **접근 방법**: `lsmod` 확인 → `modprobe -r` 언로드 → `/etc/modprobe.d/`에 blacklist + install 등록 → 증거 저장.
 

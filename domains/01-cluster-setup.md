@@ -19,6 +19,8 @@
 
 ## 1. NetworkPolicy 완전 정복
 
+> **📖 오픈북 — 공식 문서에서 찾기** — 시험 중 `kubernetes.io/docs`를 볼 수 있다. 검색창에 **`network policy`** 입력 → **"Network Policies"** 개념 페이지(`concepts/services-networking/network-policies`)로 간다. 페이지 안에 **default-deny 스니펫**과 `podSelector`/`ingress`·`egress`/`ports`가 다 들어간 **full 예제 YAML**이 있으니, 이걸 복사해 라벨·포트만 문제에 맞게 바꾸는 게 가장 빠르다. `ipBlock` 예시도 같은 페이지에서 `Ctrl+F ipBlock`으로 바로 찾는다. (단 DNS 53 egress 허용 블록은 이 페이지에 없으니 §1.6 패턴으로 직접 작성한다.)
+
 ### 1.1 동작 원리 — CNI가 시행한다
 
 NetworkPolicy는 Kubernetes API 오브젝트(원하는 상태를 선언해 두는 설정)일 뿐이며, 실제 트래픽 차단은 **CNI**(Container Network Interface — 파드 간 네트워크를 실제로 구현하는 플러그인 규격, Calico·Cilium 등)가 수행한다. NetworkPolicy를 지원하지 않는 CNI(예: flannel 단독)에서는 정책을 만들어도 아무 효과가 없다. 시험 클러스터는 항상 시행 가능한 CNI를 사용하므로 걱정할 필요는 없지만, "왜 정책이 안 먹히지?"라는 상황의 첫 번째 원인이 CNI라는 점은 알아두자.
@@ -285,6 +287,8 @@ kubectl -n mars run test-deny --rm -it --restart=Never \
 
 ### 2.1 개념
 
+> **📖 오픈북** — kube-bench(Aqua Security)와 CIS Benchmark 원문 사이트는 허용 문서 8개에 없다 → 실행 옵션(`--targets`, `--check`)·결과 읽는 법·빈출 Remediation을 미리 암기한다(수정 근거가 되는 플래그·설정은 kubernetes.io/docs·etcd.io/docs에서 확인 가능).
+
 CIS(Center for Internet Security) Kubernetes Benchmark는 컨트롤 플레인/노드 컴포넌트의 보안 설정 기준 문서다. **kube-bench**(Aqua Security)는 이 기준으로 클러스터를 자동 점검하는 도구로, 시험에서는 "kube-bench를 실행해 실패 항목을 찾아 수정하라"는 형태로 출제된다. **실패 항목의 번호를 찾아 Remediation 섹션의 지시를 그대로 적용하는 것**이 풀이의 전부다.
 
 ### 2.2 실행 방법
@@ -330,6 +334,8 @@ on the control plane node and set the below parameter.
 
 ### 2.4 빈출 수정 항목 총정리
 
+> **📖 오픈북 — 문서에서 찾기** — kubelet 항목(anonymous/webhook/authorization/readOnlyPort)은 `kubernetes.io/docs`에서 **`kubelet authentication authorization`** 검색 → **"Kubelet authentication/authorization"** 레퍼런스에서 각 플래그 근거를 확인한다. etcd `--client-cert-auth`는 `etcd.io/docs`에서 **`transport security`** 검색 → **"Transport security model"**. apiserver/cm/scheduler 플래그는 kubernetes.io/docs의 각 컴포넌트 레퍼런스에서 플래그명으로 검색.
+
 | 컴포넌트 | 점검 항목 | 수정 내용 | 파일 |
 |----------|-----------|-----------|------|
 | kube-apiserver | anonymous-auth | `--anonymous-auth=false` | `/etc/kubernetes/manifests/kube-apiserver.yaml` |
@@ -369,6 +375,8 @@ systemctl status kubelet
 ```
 
 ### 2.5 static pod 수정 절차와 디버깅
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`static pod`** 검색 → **"Create static Pods"** → static pod manifest 경로(`/etc/kubernetes/manifests/`)와 kubelet 자동 재생성 동작을 확인한다(`crictl`/`journalctl` 디버깅 명령 자체는 허용 문서에 없으니 암기).
 
 `/etc/kubernetes/manifests/`의 매니페스트를 저장하면 kubelet이 해당 static pod를 자동으로 재생성한다(**30초~1분 대기**). 조급하게 여러 번 수정하지 말고 기다렸다가 확인하라.
 
@@ -458,6 +466,8 @@ kubectl get nodes                         # cluster2-node1 Ready 확인
 
 ### 3.1 개념
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`ingress`** 검색 → **"Ingress"**(TLS 섹션) → `kubernetes.io/tls` 타입 Secret과 `spec.tls`(hosts·secretName) 예제를 복사해 호스트·Secret 이름만 바꾼다.
+
 Ingress에서 TLS(Transport Layer Security)를 종료(terminate)하려면 두 가지가 필요하다: ① `kubernetes.io/tls` 타입 Secret(`tls.crt` + `tls.key`), ② Ingress의 `spec.tls` 블록. 시험에서는 인증서/키 파일이 주어지거나 self-signed 인증서를 직접 만들게 한다.
 
 ### 3.2 TLS Secret 생성
@@ -473,6 +483,8 @@ openssl req -x509 -newkey rsa:4096 -nodes -days 365 \
 ```
 
 ### 3.3 Ingress에 TLS 연결
+
+> **📖 오픈북 — 문서에서 찾기** — 컨트롤러별 TLS 동작(기본 HTTPS 443 리다이렉트, `--default-ssl-certificate`, self-signed 대체 등)은 `kubernetes.github.io/ingress-nginx`에서 **`TLS`** 검색 → **"TLS/HTTPS"** 사용자 가이드에서 확인한다.
 
 > **🛠 만드는 법** — Ingress는 생성기가 있다: `k create ingress web --rule="world.universe.mine/*=web:80" $do > ing.yaml` 로 뼈대를 뽑아 `spec.tls`만 채운 뒤 `k apply -f`(여기서 `$do`=`--dry-run=client -o yaml`). TLS Secret은 YAML로 쓰지 말고 3.2처럼 `k create secret tls`로 바로 생성한다.
 
@@ -579,6 +591,8 @@ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
 
 ### 4.2 egress NetworkPolicy로 차단
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"** → `ipBlock` egress 예제(⌘/Ctrl+F `ipBlock`)를 복사해 `cidr: 0.0.0.0/0` + `except: 169.254.169.254/32`로 바꾼다(메타데이터 서비스 자체는 클라우드 문서라 허용 목록에 없음).
+
 "모든 곳으로의 egress는 허용하되 메타데이터 주소만 차단" = `ipBlock 0.0.0.0/0` + `except`.
 
 ```yaml
@@ -679,6 +693,8 @@ kubectl -n apps run tmp2 --rm -it --restart=Never --image=busybox:1.36 -- \
 ## 5. 플랫폼 바이너리 검증
 
 ### 5.1 개념
+
+> **📖 오픈북** — `sha512sum`/`sha512sum --check`는 셸 명령이라 암기 대상이다. 체크섬 대조 형식이 헷갈리면 `kubernetes.io/docs`에서 **`install kubectl linux`** 검색 → **"Install and Set Up kubectl on Linux"**의 바이너리 검증(Validate) 단계에서 `echo "<hash>  kubectl" | sha256sum --check` 예시를 확인한다(sha256→sha512만 치환). cosign 등 서명 검증 도구는 허용 문서 8개에 없다.
 
 공급망 공격의 1차 방어선: 다운로드하거나 이미 설치된 Kubernetes 바이너리(kubelet, kubectl, kubeadm, 서버 tarball)가 공식 릴리스와 동일한지 **sha512 체크섬**으로 확인한다. 공식 릴리스는 각 바이너리에 대해 `.sha256`/`.sha512` 체크섬 파일을 함께 배포한다(체크섬 파일에는 해시 문자열만 들어 있다).
 

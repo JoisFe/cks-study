@@ -21,6 +21,8 @@
 
 ### 1.1 Role vs ClusterRole, Binding 조합 4가지
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → Role·RoleBinding·ClusterRole YAML 예제 복사.
+
 RBAC의 리소스는 딱 4종류다. **권한을 정의하는 것**(Role/ClusterRole)과 **권한을 주체(subject)에 연결하는 것**(RoleBinding/ClusterRoleBinding)으로 나뉜다.
 
 | 조합 | 권한 범위 | 용도 |
@@ -78,6 +80,8 @@ roleRef:
 
 ### 1.2 위험한 verb와 와일드카드
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"**의 *Privilege escalation prevention* 절 → escalate/bind 동작 정의 확인.
+
 CKS는 "이 ClusterRole에서 위험한 권한을 찾아 제거하라"는 식으로 출제된다. 다음 4가지를 보면 즉시 의심하라.
 
 | 위험 요소 | 무엇이 가능해지나 |
@@ -131,6 +135,8 @@ Task (mini): In namespace `finance` there is a ServiceAccount `report-sa`. Creat
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → Role/RoleBinding YAML 뼈대(명령형이 더 빠르면 생략).
+
 **1) 접근 방법**: 명령형 커맨드 3줄이면 끝나는 전형적 RBAC 문제. 검증까지 `auth can-i`로 마무리한다.
 
 **2) 단계별 명령어**:
@@ -170,6 +176,8 @@ kubectl auth can-i delete configmaps -n finance \
 **보안 원칙**: ① 앱이 API를 쓰지 않으면 토큰 마운트 차단, ② API를 쓴다면 default가 아닌 전용 SA + 최소 RBAC.
 
 ### 2.2 automountServiceAccountToken: false — SA 레벨 vs Pod 레벨
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`service account`** 검색 → **"Configure Service Accounts for Pods"** → `automountServiceAccountToken` 필드 위치(SA 최상위 vs Pod spec)·우선순위 확인.
 
 > **🛠 만드는 법** — ServiceAccount는 생성기가 있다: `k create sa no-token-sa -n dev $do > sa.yaml`로 뼈대를 뽑고 최상위에 `automountServiceAccountToken: false`를 채워 `k apply -f`.
 
@@ -250,6 +258,8 @@ Task (mini): In namespace `payment`, create a ServiceAccount named `batch-sa` th
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`service account`** 검색 → **"Configure Service Accounts for Pods"** → automount 비활성(SA 레벨) 예제 확인.
+
 **1) 접근 방법**: SA를 YAML로 만들어 `automountServiceAccountToken: false`를 최상위에 넣고, Pod는 spec이 immutable이므로 YAML을 덤프해 수정 후 재생성한다.
 
 **2) 단계별 명령어**:
@@ -292,6 +302,8 @@ kubectl exec batch-runner -n payment -- ls /var/run/secrets/kubernetes.io/servic
 
 ### 3.1 요청 처리 흐름: 인증 → 인가 → 어드미션
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`controlling access`** 검색 → **"Controlling Access to the Kubernetes API"** → 인증→인가→어드미션 흐름 설명 참고.
+
 모든 API 요청은 세 관문을 통과한다.
 
 | 단계 | 질문 | 메커니즘 |
@@ -303,6 +315,8 @@ kubectl exec batch-runner -n payment -- ls /var/run/secrets/kubernetes.io/servic
 인증 실패 = **401 Unauthorized**, 인가 실패 = **403 Forbidden**. 이 구분이 익명 접근 테스트 해석의 핵심이다.
 
 ### 3.2 kube-apiserver 하드닝 플래그
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`kube-apiserver`** 검색 → **"kube-apiserver"**(command-line reference) → `--anonymous-auth`·`--profiling`·`--enable-admission-plugins`·`--service-account-lookup` 플래그 확인.
 
 수정 대상: `/etc/kubernetes/manifests/kube-apiserver.yaml` (static pod — 저장하면 kubelet이 자동 재생성, 30초~1분 대기).
 
@@ -325,6 +339,8 @@ curl -k https://<apiserver>:6443/api
 > **⚠️ 함정**: `--anonymous-auth=false`를 설정하면 apiserver의 livez/healthz 익명 프로브 등 익명 접근에 의존하는 요소가 영향을 받을 수 있다. 시험에서는 지시대로 설정하면 되지만, **manifest 저장 후 apiserver가 다시 뜰 때까지 `kubectl`이 잠시 먹통이 되는 것은 정상**이다. 안 뜨면 `crictl ps -a`로 컨테이너 상태, `journalctl -u kubelet` 또는 `/var/log/pods/`에서 오류(대부분 플래그 오타)를 확인하라.
 
 ### 3.3 kubelet 하드닝 — /var/lib/kubelet/config.yaml
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`kubelet authentication authorization`** 검색 → **"Kubelet authentication/authorization"** → anonymous/webhook 인증·authorization mode 설정 참고.
 
 kubelet API(포트 10250)는 컨테이너 exec/log 접근이 가능한 강력한 API다. 익명 접근을 막고 apiserver를 통한 위임 인증/인가만 허용해야 한다.
 
@@ -360,6 +376,8 @@ curl -s  http://localhost:10255/pods     # readOnlyPort: 0 이면 연결 실패�
 
 ### 3.4 NodeRestriction admission plugin
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`admission controllers`** 검색 → **"Admission Control in Kubernetes"**의 *NodeRestriction* 절 → 플러그인이 제한하는 kubelet 동작 확인.
+
 `--enable-admission-plugins=NodeRestriction` 활성화 시 kubelet(`system:node:<노드명>` 자격증명)이 할 수 있는 일이 제한된다.
 
 - **자기 자신의 Node 객체**와 **자기 노드에서 실행 중인 Pod**만 수정 가능
@@ -386,6 +404,8 @@ Task (mini): The kubelet on node `wk8s-node-1` currently allows anonymous reques
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`kubelet authentication authorization`** 검색 → **"Kubelet authentication/authorization"** → anonymous/webhook/authorization mode 필드 확인.
 
 **1) 접근 방법**: 노드에 SSH 접속 → `/var/lib/kubelet/config.yaml`의 3개 지점 수정 → kubelet 재시작 → curl로 검증.
 
@@ -435,6 +455,8 @@ kubectl get node wk8s-node-1                 # Ready 유지 확인 (컨트롤플
 Kubernetes에는 User 객체가 없다. 클러스터 CA(Certificate Authority — 인증서를 발급·서명하는 인증 기관)가 서명한 클라이언트 인증서의 **CN(Common Name)이 사용자명, O(Organization)가 그룹**으로 해석된다. "새 개발자 alice에게 dev 네임스페이스 접근 권한을 부여하라"는 문제는 아래 6단계를 한 번에 수행하는 문제다.
 
 ### 4.1 전체 흐름 (6단계)
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`certificate signing request`** 검색 → **"Certificate Signing Requests"** → CertificateSigningRequest YAML 뼈대와 approve 흐름 복사.
 
 > **🛠 만드는 법** — CertificateSigningRequest는 생성기가 없다(`kubectl create csr` 없음). 최소 뼈대를 kubernetes.io/docs에서 복사해 `request`(CSR 파일의 base64), `signerName`, `usages`를 채운다.
 
@@ -514,6 +536,8 @@ Task (mini): A CertificateSigningRequest for user `dev-bob` is already present i
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`certificate signing request`** 검색 → **"Certificate Signing Requests"** → approve·`.status.certificate` 추출 흐름 확인.
+
 **1) 접근 방법**: 이미 CSR 리소스가 있으므로 approve → 인증서 추출 → RBAC 연결 3단계만 수행.
 
 **2) 단계별 명령어**:
@@ -566,6 +590,8 @@ kubectl auth can-i delete pods -n sandbox --as=dev-bob    # no
 
 ### 5.3 컨트롤플레인 업그레이드 절차 (Ubuntu / kubeadm)
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`upgrading kubeadm`** 검색 → **"Upgrading kubeadm clusters"** → 컨트롤플레인 노드 업그레이드 단계별 명령 복사.
+
 ```bash
 ssh cks-controlplane
 
@@ -598,6 +624,8 @@ kubectl get nodes    # VERSION 이 v1.35.1 인지 확인
 ```
 
 ### 5.4 워커 노드 업그레이드 절차
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`upgrading kubeadm`** 검색 → **"Upgrading kubeadm clusters"**의 *Upgrade worker nodes* 절 → `kubeadm upgrade node` 순서 확인.
 
 ```bash
 # 컨트롤플레인(또는 점프 호스트)에서 먼저 drain
@@ -639,6 +667,8 @@ Task (mini): The control plane node `cks-controlplane` is running an outdated Ku
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`upgrading kubeadm`** 검색 → **"Upgrading kubeadm clusters"** → 컨트롤플레인 업그레이드 명령 순서 확인.
 
 **1) 접근 방법**: 5.3의 표준 절차 그대로 — kubeadm → upgrade apply → drain → kubelet/kubectl → uncordon.
 
@@ -689,6 +719,8 @@ Create a ServiceAccount `ci-bot` in namespace `pipeline`. Create a Role `ci-role
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → Role/RoleBinding YAML(필요 시). 명령형이 더 빠름.
+
 **1) 접근 방법**: 전부 명령형 커맨드로 해결. 서브리소스 `pods/log`는 `--resource=pods/log`로 그대로 쓸 수 있다.
 
 **2) 단계별 명령어**:
@@ -735,6 +767,8 @@ In namespace `stage` there is a Role `stage-admin` bound to ServiceAccount `stag
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → rules(apiGroups/resources/verbs) 예제로 와일드카드 교체.
+
 **1) 접근 방법**: Binding은 그대로 두고 Role의 rules만 교체하면 된다. `kubectl edit role`이 가장 빠르다.
 
 **2) 단계별 명령어**:
@@ -780,6 +814,8 @@ The ClusterRole `ops-role` grants dangerous permissions. Identify any rules usin
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"**의 *Privilege escalation prevention* 절 → escalate/bind/impersonate 의미 확인.
+
 **1) 접근 방법**: ClusterRole을 덤프해 위험 verb가 포함된 rule을 찾고, 해당 rule만 삭제한다. 기록 파일도 잊지 말 것.
 
 **2) 단계별 명령어**:
@@ -823,6 +859,8 @@ In namespace `web` the Deployment `frontend` runs with the `default` ServiceAcco
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`service account`** 검색 → **"Configure Service Accounts for Pods"** → automount 비활성·SA vs Pod 우선순위 확인.
 
 **1) 접근 방법**: SA를 automount false로 생성 → Deployment의 pod template에 serviceAccountName 지정. Deployment는 template 수정만으로 롤링 재생성되므로 Pod 삭제가 필요 없다.
 
@@ -869,6 +907,8 @@ Namespace `ops` contains several ServiceAccounts. Find all ServiceAccounts that 
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`service account`** 검색 → **"Configure Service Accounts for Pods"** → `kubectl create token`(단기 토큰) 사용법 확인.
+
 **1) 접근 방법**: SA 목록과 Pod들이 실제 사용하는 SA 목록을 비교 → 차집합 삭제(default 제외) → 남은 SA로 `kubectl create token`.
 
 **2) 단계별 명령어**:
@@ -909,6 +949,8 @@ The kube-apiserver of this cluster accepts anonymous requests and profiling is e
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`kube-apiserver`** 검색 → **"kube-apiserver"**(command-line reference) → `--anonymous-auth`·`--profiling`·`--enable-admission-plugins` 플래그 확인.
 
 **1) 접근 방법**: static pod manifest `/etc/kubernetes/manifests/kube-apiserver.yaml`의 command 플래그 3개를 수정하고, kubelet이 apiserver를 재생성할 때까지 기다린 뒤 curl로 검증.
 
@@ -961,6 +1003,8 @@ A security scan reported that the kubelet on `wk8s-node-1` accepts anonymous req
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`kubelet authentication authorization`** 검색 → **"Kubelet authentication/authorization"** → anonymous/webhook/authorization mode 설정 확인.
 
 **1) 접근 방법**: kubelet 하드닝 4종 세트를 `/var/lib/kubelet/config.yaml`에 적용 — anonymous 차단, webhook 인증, Webhook 인가, readOnlyPort 0.
 
@@ -1019,6 +1063,8 @@ Create a new user `jane` who can authenticate to the cluster with a client certi
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`certificate signing request`** 검색 → **"Certificate Signing Requests"** → CSR YAML·approve·인증서 추출 흐름 복사.
 
 **1) 접근 방법**: 4.1의 6단계 중 key/CSR 생성은 이미 되어 있으므로 CSR 리소스 생성부터 시작한다.
 
@@ -1079,6 +1125,8 @@ Worker node `wk8s-node-1` is running Kubernetes `1.34.x` while the control plane
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`upgrading kubeadm`** 검색 → **"Upgrading kubeadm clusters"**의 *Upgrade worker nodes* 절 → `kubeadm upgrade node` 순서 확인.
+
 **1) 접근 방법**: drain(점프 호스트에서) → 노드에서 kubeadm 업그레이드 → `kubeadm upgrade node` → kubelet/kubectl 업그레이드 + 재시작 → uncordon.
 
 **2) 단계별 명령어**:
@@ -1134,6 +1182,8 @@ The ServiceAccount `deploy-bot` in namespace `prod` is reported to have far more
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → 최소권한 Role/RoleBinding 예제로 재구성.
 
 **1) 접근 방법**: 감사(`auth can-i --list`) → 역추적(어떤 Binding이 SA를 참조하나) → 과도한 Binding 제거 → 최소권한 Role/RoleBinding 신설 → 재감사. 실전 복합 문제의 정석 흐름이다.
 

@@ -40,7 +40,7 @@ docker inspect nginx:1.25.3            # ENV, USER, ENTRYPOINT 등 메타데이�
 
 **Before — 나쁜 예 (시험에 이런 Dockerfile이 주어진다):**
 
-> **🛠 만드는 법** — Dockerfile은 kubectl 리소스가 아니다 → dry-run 생성 대상이 아니다. 시험에선 주어진 Dockerfile(또는 docs.docker.com 예제)을 열어 요구 항목만 편집한다.
+> **🛠 만드는 법** — Dockerfile은 kubectl 리소스가 아니다 → dry-run 생성 대상이 아니다. 시험에선 항상 문제에서 주어지는 Dockerfile을 열어 요구 항목만 편집한다(외부 예제 참조 불필요).
 
 ```dockerfile
 FROM ubuntu:latest
@@ -155,6 +155,8 @@ SBOM(Software Bill of Materials)은 소프트웨어(여기서는 컨테이너 �
 
 ### bom으로 SBOM 생성/조회
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes-sigs.github.io/bom/cli-reference`에서 **`bom generate`** · **`bom document outline`** 항목 → SPDX 생성·조회 서브커맨드와 `--image`/`--output` 플래그를 그대로 복사.
+
 `bom`은 Kubernetes SIG Release가 만든 SPDX(Software Package Data Exchange) 전용 도구다. 문서는 시험 중 열람 허용 목록에 있다: `kubernetes-sigs.github.io/bom/cli-reference/`.
 
 ```bash
@@ -172,6 +174,8 @@ bom document outline /opt/course/5/sbom.spdx | grep -i libssl
 
 ### trivy로 SBOM 생성/스캔
 
+> **📖 오픈북** — trivy는 허용 문서 8개에 없다(trivy.dev 차단) → `--format spdx-json|cyclonedx`, `--output`, `trivy sbom 파일` 옵션을 미리 암기.
+
 ```bash
 # SPDX JSON 형식 SBOM 생성
 trivy image --format spdx-json --output /opt/course/5/sbom.json nginx:1.25.3
@@ -185,6 +189,8 @@ trivy sbom --severity CRITICAL /opt/course/5/sbom.json
 ```
 
 ### 빈출 유형: SBOM에서 특정 패키지/버전 찾기
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes-sigs.github.io/bom/cli-reference`에서 **`bom document outline`** 서브커맨드 → 트리 출력 형식을 확인하고 grep 대상 필드(PackageName/PackageVersion)를 파악.
 
 "이미지 X의 SBOM을 만들고, 그 안의 패키지 Y의 버전을 파일에 기록하라" 유형이 나온다.
 
@@ -206,6 +212,8 @@ jq -r '.packages[] | select(.name | test("openssl")) | "\(.name) \(.versionInfo)
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes-sigs.github.io/bom/cli-reference`에서 **`bom generate`**로 `--image`/`--output` 플래그 확인 → `bom document outline`으로 패키지 버전 조회.
 
 **1) 접근 방법**
 
@@ -245,6 +253,8 @@ ls -l /opt/course/m2/sbom.spdx
 
 ### cosign 기본 명령
 
+> **📖 오픈북** — cosign은 허용 문서 8개에 없다(sigstore.dev 차단) → `generate-key-pair`, `sign --key cosign.key`, `verify --key cosign.pub`를 미리 암기.
+
 ```bash
 # 키 쌍 생성: cosign.key(개인키) + cosign.pub(공개키). 암호는 COSIGN_PASSWORD 환경변수로도 전달 가능
 cosign generate-key-pair
@@ -259,6 +269,8 @@ cosign verify --key cosign.pub registry.example.com/apps/web:v1.2.3
 > **💡 시험 팁**: `sign`은 **개인키(cosign.key)**, `verify`는 **공개키(cosign.pub)**. 서명은 레지스트리에 저장되므로 push 권한이 필요하다. 검증 실패(변조/미서명)는 명령이 0이 아닌 종료코드로 끝나는 것으로 판별한다.
 
 ### ImagePolicyWebhook Admission Controller
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`admission controllers`** 검색 → **"Admission Control in Kubernetes"** (ImagePolicyWebhook 섹션) → AdmissionConfiguration·imagePolicy 필드(defaultAllow 등) 예제를 복사.
 
 kube-apiserver의 admission 단계에서 **외부 웹훅 서버에게 "이 이미지 배포를 허용할까?"를 물어보는** 컨트롤러다. 시험에서는 보통 웹훅 서버와 파일들이 미리 준비되어 있고, 설정 파일을 완성하고 apiserver에 연결하는 것까지가 과제다.
 
@@ -334,6 +346,8 @@ users:
 
 ### ValidatingAdmissionPolicy (CEL) — 허용 레지스트리 강제의 현대적 방법
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`validating admission policy`** 검색 → **"Validating Admission Policy"** → ValidatingAdmissionPolicy·Binding YAML과 CEL 표현식 예제를 복사.
+
 v1.30에서 GA된 ValidatingAdmissionPolicy는 **웹훅 서버 없이** apiserver 내장 CEL(Common Expression Language — 정책 조건을 기술하는 표현식 언어) 엔진으로 리소스를 검증한다. 외부 의존성이 없어 ImagePolicyWebhook보다 간단하고, "특정 레지스트리 이미지만 허용" 같은 정책에 적합하다. (OPA Gatekeeper도 같은 목적의 도구지만 CKS에서는 참고 수준으로만 알아두면 된다.)
 
 **Policy — 검증 규칙 정의:**
@@ -396,6 +410,8 @@ kubectl -n team-a run good --image=registry.company.io/nginx:1.25.3   # 허용(�
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — cosign은 허용 문서 8개에 없다 → `sign --key cosign.key` / `verify --key cosign.pub` 순서와 키 구분(sign=개인키, verify=공개키)을 미리 암기.
+
 **1) 접근 방법**
 
 `generate-key-pair` → `sign --key cosign.key` → `verify --key cosign.pub` 순서. verify의 stdout을 파일로 리다이렉트한다.
@@ -428,6 +444,8 @@ cat /opt/course/m3/verify.json # 서명 claim JSON 확인
 ## 4. 정적 분석 (Kubesec / KubeLinter)
 
 ### kubesec — manifest 점수화
+
+> **📖 오픈북** — Kubesec은 허용 문서 8개에 없다(kubesec.io 차단) → `kubesec scan 파일`, 공개 API `https://v2.kubesec.io/scan`, critical/advise 구조를 미리 암기.
 
 kubesec은 단일 Kubernetes manifest의 보안 위험을 **점수(score)** 로 평가하고 개선 항목을 알려 준다. 2024 개편에서 추가된 도구다.
 
@@ -488,6 +506,8 @@ securityContext:
 
 ### KubeLinter — manifest/차트 린트
 
+> **📖 오픈북** — KubeLinter는 허용 문서 8개에 없다(docs.kubelinter.io 차단) → `kube-linter lint 경로`, `kube-linter checks list`, 주요 체크명을 미리 암기.
+
 KubeLinter는 여러 파일/디렉토리/Helm 차트에 대해 수십 개의 체크를 일괄 실행한다.
 
 ```bash
@@ -519,6 +539,8 @@ CI 관점: 두 도구 모두 종료코드로 성공/실패를 반환하므로 �
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — Kubesec은 허용 문서 8개에 없다 → `kubesec scan`으로 critical 먼저 제거 후 advise로 점수 올리는 흐름을 미리 암기.
 
 **1) 접근 방법**
 
@@ -573,6 +595,8 @@ kubesec scan /opt/course/m4/pod-fixed.yaml    # score가 양수인지 확인
 
 ### trivy image 기본기
 
+> **📖 오픈북** — trivy는 허용 문서 8개에 없다 → `--severity CRITICAL,HIGH`, `--ignore-unfixed`, `-f json -o 파일` 플래그를 미리 암기.
+
 ```bash
 # 기본 스캔
 trivy image nginx:1.25.3
@@ -601,6 +625,8 @@ jq '[.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' re
 
 ### 빈출 유형: 클러스터에서 취약 이미지 찾아 조치
 
+> **📖 오픈북 — 문서에서 찾기** — 이미지 CVE 스캔(trivy)은 허용 문서에 없어 암기. 이미지 나열 jsonpath는 `kubernetes.io/docs`에서 **`list all container images`** 검색 → **"List All Container Images Running in a Cluster"** 예제를 복사.
+
 "네임스페이스 X의 Pod들이 쓰는 이미지를 스캔해 CRITICAL 취약점이 있는 Pod를 삭제(또는 Deployment scale 0)하라" 유형이 단골이다.
 
 ```bash
@@ -625,6 +651,8 @@ kubectl -n team-blue scale deploy web --replicas=0         # Deployment이면 sc
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — trivy는 허용 문서 8개에 없다 → `--severity CRITICAL`로 스캔하고 `Total` 라인 비교하는 흐름을 미리 암기.
 
 **1) 접근 방법**
 
@@ -802,6 +830,8 @@ kubectl config use-context infra-prod
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes-sigs.github.io/bom/cli-reference`에서 **`bom generate`** · **`bom document outline`** → `--image`/`--output` 플래그와 outline 조회 방법을 복사.
+
 **1) 접근 방법**
 
 `bom generate --image` → `bom document outline` + grep → 확인된 버전을 파일로 저장.
@@ -853,6 +883,8 @@ kubectl config use-context infra-prod
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — trivy는 허용 문서 8개에 없다 → `--format cyclonedx`, `--output`, `trivy sbom -f json` 옵션을 미리 암기.
+
 **1) 접근 방법**
 
 `trivy image --format cyclonedx`로 SBOM 생성 → `trivy sbom` 서브커맨드로 그 파일을 입력 삼아 스캔 → JSON 출력 + jq로 CRITICAL ID 추출.
@@ -899,6 +931,8 @@ A cosign key pair already exists at `/opt/course/5/cosign.key` and `/opt/course/
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — cosign은 허용 문서 8개에 없다 → `sign --key cosign.key -y` / `verify --key cosign.pub` (키 뒤바뀜 주의)를 미리 암기.
 
 **1) 접근 방법**
 
@@ -952,6 +986,8 @@ Complete the setup:
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`admission controllers`** 검색 → **"Admission Control in Kubernetes"** (ImagePolicyWebhook 섹션) → AdmissionConfiguration 뼈대를 복사해 경로·`defaultAllow: false`만 채움.
 
 **1) 접근 방법**
 
@@ -1034,6 +1070,8 @@ kubectl config use-context workload-prod
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`validating admission policy`** 검색 → **"Validating Admission Policy"** → Policy·Binding YAML을 복사해 CEL 표현식·namespaceSelector만 수정.
+
 **1) 접근 방법**
 
 Policy(CEL 표현식)와 Binding(namespaceSelector + Deny)을 각각 생성한다. initContainers는 옵셔널 필드이므로 `has()`로 가드한다.
@@ -1110,6 +1148,8 @@ kubectl config use-context workload-prod
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — Kubesec은 허용 문서 8개에 없다 → `kubesec scan`, 공개 API `https://v2.kubesec.io/scan`, critical 우선 제거 흐름을 미리 암기.
+
 **1) 접근 방법**
 
 스캔 → critical(대개 `privileged: true`, hostNetwork 등) 제거 → advise 반영 → 재스캔 → apply.
@@ -1167,6 +1207,8 @@ kubectl config use-context workload-prod
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — KubeLinter는 허용 문서 8개에 없다 → `kube-linter lint 경로`와 출력의 Remediation을 그대로 적용하는 흐름을 미리 암기.
+
 **1) 접근 방법**
 
 린트 실행 → 두 체크가 지적한 리소스/컨테이너 위치를 확인 → securityContext 필드 추가 → 재린트로 소거 확인.
@@ -1216,6 +1258,8 @@ Namespace `team-red` contains several pods. Using trivy, scan all container imag
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — 이미지 스캔(trivy)은 허용 문서에 없어 암기. Pod 이미지 나열 jsonpath는 `kubernetes.io/docs`의 **"List All Container Images Running in a Cluster"**(`list all container images` 검색) 예제를 복사.
 
 **1) 접근 방법**
 
@@ -1273,6 +1317,8 @@ kubectl config use-context workload-prod
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — trivy는 허용 문서 8개에 없다 → `-f json -o`와 jq CRITICAL 추출/개수 패턴을 미리 암기.
+
 **1) 접근 방법**
 
 `-f json -o` 로 리포트 생성 후 jq 두 방으로 개수와 ID 목록을 추출한다.
@@ -1322,6 +1368,8 @@ Namespace `team-purple` contains several Deployments. Using trivy:
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — 이미지 스캔(trivy)은 암기. Deployment 이미지 나열 jsonpath는 `kubernetes.io/docs`의 **"List All Container Images Running in a Cluster"** 예제를 응용(`.spec.template.spec.containers`).
 
 **1) 접근 방법**
 

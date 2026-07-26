@@ -30,6 +30,8 @@
 
 ### 1.1 아키텍처와 설치 형태
 
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`install host`** 검색 → **"Install on a host (DEB, RPM)"** → 시험 표준인 systemd 서비스 설치 형태·유닛명 확인.
+
 Falco는 **커널 이벤트(syscall) 기반 런타임 위협 탐지 도구**다. 커널 모듈 또는 eBPF(extended Berkeley Packet Filter — 커널 안에서 안전하게 프로그램을 실행시키는 기술) probe가 노드에서 발생하는 모든 syscall 스트림을 가로채고, 유저스페이스의 Falco 데몬이 이를 **룰(rule)의 condition과 대조**해 매칭되면 output 포맷대로 알림을 낸다. 컨테이너 런타임(containerd)과 Kubernetes 메타데이터를 결합해 "어느 네임스페이스의 어느 pod에서" 일어났는지까지 붙여준다.
 
 시험에서 중요한 사실:
@@ -52,6 +54,8 @@ falco --version
 > **💡 시험 팁**: Falco 문제는 "ssh → 룰 파일 수정 → 재시작/실행 → 로그 확인 → 파일 제출" 흐름이 전부다. 이 5단계를 손이 기억하게 만들어라.
 
 ### 1.2 설정 파일 구조
+
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`configuration options`** 검색 → **"Falco Configuration Options"** → `rules_files`·`json_output`·`*_output` 채널 키 확인.
 
 설정 디렉토리는 `/etc/falco/`다. 시험장에서 가장 먼저 `ls /etc/falco/`를 실행하라.
 
@@ -87,6 +91,8 @@ syslog_output:
 > **📌 암기 포인트**: "기본 룰은 `falco_rules.yaml`, 내 룰은 `falco_rules.local.yaml`, 같은 이름이면 나중 것이 이긴다."
 
 ### 1.3 룰 문법: rule / macro / list
+
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`rules basic elements`** 검색 → **"Basic Elements of Falco Rules"** → rule/macro/list 필수 키와 예제 복사.
 
 룰 파일은 YAML 리스트이며 세 가지 요소로 구성된다.
 
@@ -191,6 +197,8 @@ journalctl -u falco --since "2 min ago" | grep -i netcat
 
 ### 1.4 최다 빈출: 기존 룰 출력 포맷 오버라이드
 
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`overriding rules`** 검색 → **"Overriding Rules"** → 같은 rule 이름 재정의로 기존 룰을 override하는 방식 확인.
+
 **CKS에서 가장 많이 보고되는 Falco 유형**: "특정 행위(예: 컨테이너 안 쉘 실행)를 탐지하는 기존 룰을 찾아, 출력 형식을 지정된 필드로 바꿔라." 순서화된 워크플로우로 익혀라.
 
 ```bash
@@ -271,6 +279,8 @@ journalctl -u falco --since "1 min ago" | grep -i critical
 </details>
 
 ### 1.5 실행·수집·제출
+
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`daemon arguments`** 검색 → **"Falco Daemon Arguments"** → `-M`(수집 시간)·`-o`(일회성 오버라이드) 등 CLI 플래그 확인.
 
 Falco 이벤트를 "일정 시간 수집해서 파일로 제출"하는 유형. 두 가지 실행 모드를 구분하라.
 
@@ -358,6 +368,8 @@ kubectl get events -n ns --sort-by=.lastTimestamp
 
 ### 컨테이너 폭로 (노드에서 crictl)
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`crictl`** 검색 → **"Debugging Kubernetes nodes with crictl"** → `crictl ps`·`inspect`·`logs` 사용 예제 확인.
+
 containerd 환경이므로 노드에서는 `crictl`이 표준 도구다.
 
 ```bash
@@ -374,6 +386,8 @@ crictl logs <CONTAINER_ID> > /opt/course/8/logs.txt   # 증거 보존
 
 ### 프로세스 해부 (/proc/PID)
 
+> **📖 오픈북** — `/proc/PID/{exe,cwd,environ,fd}`·`ps`·`readlink`는 허용 문서 8개에 없다 → 명령을 미리 암기.
+
 crictl inspect로 얻은 PID로 호스트에서 프로세스의 실체를 확인한다.
 
 ```bash
@@ -385,6 +399,8 @@ cat /proc/<PID>/cmdline | tr '\0' ' '; echo
 ```
 
 ### 대응: 격리 → 보존 → 제거
+
+> **📖 오픈북 — 문서에서 찾기** — 네트워크 격리용 deny-all은 `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"** → ingress+egress를 모두 막는 예제 YAML 복사(scale·label·crictl은 암기).
 
 | 조치 | 명령 | 용도 |
 |---|---|---|
@@ -431,6 +447,8 @@ readlink -f /proc/<PID>/exe > /opt/course/m4/exe.txt
 ---
 
 ## 3. 컨테이너 불변성 보장 (Immutability)
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → `readOnlyRootFilesystem`·`allowPrivilegeEscalation` 등 container 레벨 필드 복사.
 
 불변 컨테이너는 **실행 중 파일시스템 변조가 불가능**하므로, 공격자가 쉘을 얻어도 악성 바이너리 다운로드·설치·지속화가 어렵다. 즉 immutability는 그 자체가 런타임 방어선이다. 핵심 패턴:
 
@@ -487,6 +505,8 @@ kubectl -n team-orange logs deploy/immutable-app
 `hostPID: false`, `hostIPC: false`, `hostNetwork: false`(모두 기본값)도 함께 요구될 수 있다 — 명시돼 있으면 제거하거나 false로.
 
 ### 변형: probe로 쉘 제거/감시
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`liveness readiness startup probes`** 검색 → **"Configure Liveness, Readiness and Startup Probes"** → `startupProbe`/`livenessProbe`의 `exec` 예제 복사.
 
 이미지를 다시 빌드할 수 없을 때 probe를 방어 수단으로 쓰는 변형이 있다.
 
@@ -556,6 +576,8 @@ kubectl -n dev exec writer -- touch /etc/x            # Read-only 에러가 정�
 
 ### 4.1 아키텍처
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"**(Audit stages 섹션) → RequestReceived/ResponseComplete 등 stage 정의 확인.
+
 Audit 로그는 **kube-apiserver가 기록**한다. API 서버를 지나는 모든 요청은 단계(stage)를 거치며, 각 단계에서 policy에 따라 이벤트가 남는다.
 
 | Stage | 시점 |
@@ -568,6 +590,8 @@ Audit 로그는 **kube-apiserver가 기록**한다. API 서버를 지나는 모�
 같은 요청이 stage마다 중복 기록될 수 있으므로 보통 `omitStages: ["RequestReceived"]`로 잡음을 줄인다.
 
 ### 4.2 Audit Policy 문법
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"**(Audit policy 섹션) → Policy YAML·level 4종 예제 복사.
 
 > **🛠 만드는 법** — Audit Policy는 kubectl 리소스가 아니라 apiserver가 읽는 설정 파일이다. 생성기가 없으니 [kubernetes.io/docs의 Auditing](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/) 예제 Policy를 복사해 `rules` 순서만 요구사항대로 채운다.
 
@@ -605,6 +629,8 @@ rules:
 > **⚠️ 함정**: 첫 매칭 룰 적용 원칙 때문에 **`level: None` 캐치올을 맨 위에 쓰면 아무것도 기록되지 않는다**. 구체적인 룰 → 일반적인 룰 순서로 배치하라. 또한 `group: ""`(core group)은 빈 문자열이며 생략하면 모든 group을 뜻하지 않으니 명시하라.
 
 ### 4.3 apiserver 플래그와 volume mount 함정
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"**(Log backend 섹션) → `--audit-policy-file`·`--audit-log-*` 플래그 확인.
 
 policy 파일을 만들었으면 `/etc/kubernetes/manifests/kube-apiserver.yaml`(static pod)에 반영한다. **플래그 4~5종 + hostPath 마운트 2개**가 한 세트다.
 
@@ -651,6 +677,8 @@ ls /var/log/pods/kube-system_kube-apiserver-*/   # 컨테이너 로그 직접 �
 > **⚠️ 함정 (자주 빠뜨리는 것)**: 플래그만 넣고 **volumeMounts/volumes를 빼먹으면** apiserver가 policy 파일을 못 읽어 기동 실패한다. 이 유형 오답의 절대다수가 이 마운트 누락이다. policy 파일 마운트(File)와 로그 디렉토리 마운트(DirectoryOrCreate) **두 개 모두** 필요하다.
 
 ### 4.4 로그 분석 jq 레시피
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"**의 샘플 audit 이벤트에서 `objectRef`·`user.username`·`verb` 필드명 확인(jq 쿼리 자체는 암기).
 
 audit 로그는 JSON Lines(한 줄에 이벤트 하나씩 담는 JSON) 형식이다. 한 이벤트의 주요 필드: `.user.username`, `.verb`, `.objectRef.resource/.namespace/.name/.subresource`, `.responseStatus.code`, `.requestReceivedTimestamp`, `.sourceIPs`.
 
@@ -716,6 +744,8 @@ jq -r 'select(.objectRef.resource == "secrets"
 
 ### Q1. Falco — 신규 커스텀 룰 작성
 
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`supported fields`** 검색 → **"Supported Fields for Conditions and Outputs"** → `fd.name`·`open_read`·`%k8s.ns.name` 등 필드명 확인.
+
 ```bash
 kubectl config use-context cluster3-admin
 ssh cluster3-node1
@@ -773,6 +803,8 @@ journalctl -u falco --since "2 min ago" | grep "Sensitive file read"
 </details>
 
 ### Q2. Falco — 기존 룰 출력 포맷 오버라이드 (최다 빈출)
+
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`overriding rules`** 검색 → **"Overriding Rules"** → 같은 rule 이름으로 output만 재정의(override)하는 방법 확인.
 
 ```bash
 kubectl config use-context cluster3-admin
@@ -842,6 +874,8 @@ cat /opt/course/2/shell.log   # 콤마 구분 4개 필드 확인
 
 ### Q3. Falco — 일정 시간 수집 후 필드 추출 제출
 
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`daemon arguments`** 검색 → **"Falco Daemon Arguments"** → `-M`(N초 후 종료)·`-o json_output=true` 확인(추출용 jq는 암기).
+
 ```bash
 kubectl config use-context cluster3-admin
 ssh cluster3-node2
@@ -894,6 +928,8 @@ systemctl is-active falco        # active
 </details>
 
 ### Q4. Falco — 룰을 트리거한 Pod 찾아 조치
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`crictl`** 검색 → **"Debugging Kubernetes nodes with crictl"** → `crictl inspect`의 labels로 container id → pod/namespace 역추적.
 
 ```bash
 kubectl config use-context cluster3-admin
@@ -949,6 +985,8 @@ journalctl -u falco -f     # 새 이벤트가 더 이상 없음
 
 ### Q5. Audit — 요구사항을 Policy로 번역
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"** → omitStages·rules 순서·level 예제 Policy 복사.
+
 ```bash
 kubectl config use-context cluster2-admin
 ssh cluster2-controlplane1
@@ -1001,6 +1039,8 @@ rules:
 </details>
 
 ### Q6. Audit — apiserver 플래그 + 마운트 구성
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"**(Log backend) → `--audit-policy-file`·`--audit-log-*` 플래그 확인(hostPath 마운트는 static pod에 직접 추가).
 
 ```bash
 kubectl config use-context cluster2-admin
@@ -1073,6 +1113,8 @@ tail -f /etc/kubernetes/audit/audit.log | jq .
 
 ### Q7. Audit — 로그 분석으로 삭제 범인 찾기
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"**의 샘플 이벤트에서 `objectRef`·`verb`·`user.username` 필드명 확인(jq/grep 쿼리는 암기).
+
 ```bash
 kubectl config use-context cluster2-admin
 ssh cluster2-controlplane1
@@ -1117,6 +1159,8 @@ jq -r 'select(.objectRef.resource == "secrets"
 </details>
 
 ### Q8. 침해 조사 — crictl로 악성 컨테이너 폭로
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`crictl`** 검색 → **"Debugging Kubernetes nodes with crictl"** → `crictl ps`·`inspect`·`logs`로 컨테이너 폭로(ps로 PID 매칭은 암기 병행).
 
 ```bash
 kubectl config use-context cluster2-admin
@@ -1168,6 +1212,8 @@ kubectl delete pod <pod이름> -n <ns>
 </details>
 
 ### Q9. 침해 조사 — /proc과 audit log 교차 분석
+
+> **📖 오픈북** — `ss`·`/proc/PID/environ`·JWT 디코드는 허용 문서 8개에 없다 → 명령을 미리 암기. audit 조회 부분만 `kubernetes.io/docs` **"Auditing"** 참고.
 
 ```bash
 kubectl config use-context cluster2-admin
@@ -1221,6 +1267,8 @@ kill -9 XXXX
 </details>
 
 ### Q10. 불변성 — 기존 Deployment 리팩터링
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → container 레벨 `readOnlyRootFilesystem`·`allowPrivilegeEscalation` 필드 복사.
 
 ```bash
 kubectl config use-context cluster1-admin
@@ -1276,6 +1324,8 @@ kubectl -n team-orange exec deploy/legacy-app -- touch /usr/x     # Read-only �
 
 ### Q11. 불변성 — probe로 쉘 제거·감시
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`liveness readiness startup probes`** 검색 → **"Configure Liveness, Readiness and Startup Probes"** → `exec` 커맨드형 `startupProbe`/`livenessProbe` 예제 복사.
+
 ```bash
 kubectl config use-context cluster1-admin
 ```
@@ -1322,6 +1372,8 @@ kubectl -n team-blue get pod -l app=web-tier   # RESTARTS 증가 없이 Running
 </details>
 
 ### Q12. 복합 — Falco 탐지 → Audit 추적 → 격리
+
+> **📖 오픈북 — 문서에서 찾기** — 격리용 NetworkPolicy는 `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"** → ingress+egress 양방향 deny-all 뼈대 복사(falco·audit는 앞 절 참고).
 
 ```bash
 kubectl config use-context cluster3-admin

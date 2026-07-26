@@ -74,6 +74,8 @@ There are two namespaces on cluster `k8s-c1`: `payment` and `data`. Namespace `p
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"** → default-deny(빈 `podSelector`+`policyTypes`)와 egress 허용 예제 YAML을 복사.
+
 default-deny는 빈 `podSelector: {}`에 `policyTypes`로 Ingress/Egress를 모두 명시. 허용 정책은 `payment-api`만 선택해서 egress 두 갈래(DB, DNS)를 연다. 여기서 DNS(Domain Name System)는 파드가 서비스명을 IP로 찾는 이름 해석이다. namespace를 지정할 때는 기본 라벨 `kubernetes.io/metadata.name`을 쓰는 것이 가장 안전하다.
 
 **2) 단계별 풀이**
@@ -176,6 +178,8 @@ All components must be running and healthy afterwards.
 
 **1) 접근 방법**
 
+> **📖 오픈북** — kube-bench는 허용 문서 8개에 없다(사이트 차단) → 출력의 Remediation과 apiserver `--profiling`/`--anonymous-auth`, kubelet `readOnlyPort`/authorization 설정을 미리 암기. kubelet 인증·인가 필드는 `kubernetes.io/docs`에서 **`kubelet authentication authorization`** 검색으로 보강.
+
 kube-bench 출력의 `Remediation` 섹션이 사실상 정답지다. apiserver는 static pod manifest 수정, kubelet은 `/var/lib/kubelet/config.yaml` 수정 후 `systemctl restart kubelet`.
 
 **2) 단계별 풀이**
@@ -260,6 +264,8 @@ Namespace `world` contains an existing Ingress named `world` that serves host `w
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`ingress`** 검색 → **"Ingress"**(TLS 섹션) → `spec.tls`의 hosts·secretName 예제를 복사.
+
 `kubectl create secret tls`로 시크릿 생성 후, Ingress의 `spec.tls`에 host와 secretName을 추가하면 끝. 문서에서 "Ingress TLS"를 검색하면 예시가 그대로 나온다.
 
 **2) 단계별 풀이**
@@ -317,6 +323,8 @@ ServiceAccount `ci-runner` in namespace `ci` is currently bound to the ClusterRo
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → Role/RoleBinding YAML과 최소 권한 예제 참고(명령형으로 만들 땐 문서 없이도 가능).
+
 명령형(imperative) 커맨드로 처리하면 2분 컷. Role/RoleBinding은 네임스페이스 범위라는 것만 기억하면 된다. 검증은 `kubectl auth can-i`.
 
 **2) 단계별 풀이**
@@ -367,6 +375,8 @@ Namespace `batch` contains several ServiceAccounts and a Deployment `worker` whi
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`service account`** 검색 → **"Configure Service Accounts for Pods"** → `automountServiceAccountToken: false`를 SA·Pod 템플릿 양쪽에 적용하는 예제 복사.
 
 `automountServiceAccountToken: false`는 SA 레벨과 Pod 레벨 둘 다 설정 가능하고 **Pod 레벨이 우선**한다. 문제는 둘 다 요구하므로 둘 다 설정. 미사용 SA는 실행 중인 pod들의 `serviceAccountName`과 대조해서 찾는다.
 
@@ -431,6 +441,8 @@ Cluster `k8s-c3` consists of a single control plane node `cluster3-master1` runn
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`upgrading kubeadm`** 검색 → **"Upgrading kubeadm clusters"** → 저장소 변경·`kubeadm upgrade plan/apply`·drain/uncordon 단계 명령을 복사.
 
 CKA에서 하던 kubeadm 업그레이드 그대로다. 순서: apt 저장소 마이너 버전 변경 → kubeadm 업그레이드 → `kubeadm upgrade plan/apply` → drain → kubelet/kubectl 업그레이드 → restart → uncordon. 정확한 패치 버전은 `apt-cache madison kubeadm`으로 확인한다(아래 1.35.1은 예시).
 
@@ -514,6 +526,8 @@ profile deny-write flags=(attach_disconnected) {
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`apparmor`** 검색 → **"Restrict a Container's Access to Resources with AppArmor"** → `securityContext.appArmorProfile`(type: Localhost, localhostProfile) 필드 예제 복사.
+
 v1.30+에서 AppArmor는 GA이며 `securityContext.appArmorProfile` 필드를 쓴다(과거 annotation `container.apparmor.security.beta.kubernetes.io/이름` 방식은 deprecated). 프로파일은 **pod가 스케줄될 노드에 로드되어 있어야** 하고, 재부팅 유지를 위해 `/etc/apparmor.d/`에 복사한다.
 
 **2) 단계별 풀이**
@@ -581,6 +595,8 @@ A previous administrator left a suspicious service running on node `worker1`. It
 
 **1) 접근 방법**
 
+> **📖 오픈북** — systemd/ss 기반 노드 조사(포트→PID→unit 추적, stop·disable)는 허용 문서 8개에 없다 → `ss -tlnp`, `systemctl status <PID>`, `stop`/`disable` 명령을 미리 암기.
+
 `ss -tlnp`로 포트→PID→프로세스를 찾고, `systemctl status PID`로 어떤 unit이 띄웠는지 역추적한다. `stop` + `disable`이 정답 조합.
 
 **2) 단계별 풀이**
@@ -633,6 +649,8 @@ Namespace `team-orange` must enforce the **restricted** Pod Security Standard.
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pod security standards`** 검색 → **"Pod Security Standards"** + **"Enforce Pod Security Standards with Namespace Labels"** → 네임스페이스 라벨(enforce/warn/버전 고정)과 restricted 요건을 확인.
 
 PSA(Pod Security Admission — 파드를 미리 정의된 보안 표준에 맞춰 검사·차단하는 내장 admission 컨트롤러)는 네임스페이스 라벨로 동작한다: `pod-security.kubernetes.io/<모드>=<레벨>` (모드: enforce/audit/warn, 레벨: privileged/baseline/restricted, 버전 고정: `enforce-version`). restricted 통과 조건은 사실상 고정 세트다: `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `seccompProfile: RuntimeDefault`. (여기서 capabilities=리눅스 커널 권한을 잘게 나눈 단위, seccomp=컨테이너가 호출 가능한 시스템콜을 필터링하는 커널 기능.)
 
@@ -705,6 +723,8 @@ Implement encryption at rest for Secrets on cluster `k8s-c1` (`ssh master1`).
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting secret data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → EncryptionConfiguration(provider 순서·aescbc·identity) YAML과 재암호화 명령 복사.
 
 provider 순서가 핵심이다: **첫 번째 provider로 쓰기(암호화)**, 나머지는 읽기용. `aescbc`를 첫 번째, `identity: {}`를 두 번째에 두면 "새로 쓰는 건 암호화 + 기존 평문도 읽기 가능"이 된다. apiserver에는 플래그와 함께 hostPath 마운트를 추가해야 한다.
 
@@ -810,6 +830,8 @@ The gVisor runtime (`runsc`) is installed and configured in containerd on node `
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`runtime class`** 검색 → **"Runtime Class"** → RuntimeClass YAML(`handler`)과 `spec.template.spec.runtimeClassName` 사용 예제 복사.
+
 RuntimeClass(`node.k8s.io/v1`)를 만들고 pod spec에 `runtimeClassName`을 넣으면 끝. gVisor 위에서 도는지 검증은 `dmesg`에 gVisor 문자열이 찍히는지(또는 `uname -r`이 호스트와 다른지)로 한다.
 
 **2) 단계별 풀이**
@@ -877,6 +899,8 @@ The tool `trivy` is installed on the main terminal. Namespace `applications` run
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북** — trivy는 허용 문서 8개에 없다(사이트 차단) → `trivy image --severity CRITICAL --exit-code 1 --quiet <img>` 등 옵션·명령을 미리 암기.
 
 이미지 목록을 뽑아 하나씩 `trivy image --severity CRITICAL`로 스캔한다. `--exit-code 1`을 쓰면 취약점 존재 여부를 종료 코드로 판별할 수 있어 빠르다. 취약 이미지를 쓰는 deployment만 scale 0.
 
@@ -957,6 +981,8 @@ Do not build or apply — fixing the files is enough.
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — manifest securityContext는 `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → allowPrivilegeEscalation·capabilities.drop ALL·readOnlyRootFilesystem 필드 복사. (Dockerfile 하드닝은 허용 문서 8개에 없어 암기.)
+
 요구 항목이 열거되어 있으므로 그 항목만 정확히 고친다. 그 외를 건드리면(기능 변경) 감점 여지가 있다.
 
 **2) 단계별 풀이**
@@ -1024,6 +1050,8 @@ Complete the setup:
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`admission controllers`** 검색 → **"Admission Control in Kubernetes"**(ImagePolicyWebhook 섹션) → AdmissionConfiguration(kubeConfigFile·defaultAllow: false) 예제 복사.
 
 AdmissionConfiguration 안의 `imagePolicy.kubeConfigFile`과 `defaultAllow: false`를 채우고, apiserver에 플래그 2개를 연결한다. `/etc/kubernetes/policywebhook/`는 보통 이미 마운트되어 있지만 아니라면 hostPath 추가.
 
@@ -1110,6 +1138,8 @@ Falco is installed as a systemd service on node `worker1`. A Pod in namespace `t
 
 **1) 접근 방법**
 
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`rules`** 검색 → **"Rules"**(및 "Supported Fields for Conditions and Outputs") → condition(macro `spawned_process`/`container`)과 output 필드 예제 복사.
+
 커스텀/오버라이드 룰은 `/etc/falco/falco_rules.local.yaml`에 쓴다(기본 룰 파일보다 나중에 로드되어 같은 이름이면 재정의). 기본 룰 파일에 정의된 macro `spawned_process`, `container`를 그대로 활용하면 condition이 짧아진다. 30초 수집은 `timeout 30s falco` 또는 `falco -M 30`.
 
 **2) 단계별 풀이**
@@ -1183,6 +1213,8 @@ Configure audit logging on `master1` (`ssh master1`).
 <summary>✅ 정답 및 해설</summary>
 
 **1) 접근 방법**
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`auditing`** 검색 → **"Auditing"** → 감사 Policy YAML(level·룰 순서)과 apiserver 감사 로그 플래그 복사.
 
 Audit Policy는 **첫 번째로 매칭되는 룰이 적용**되므로 순서가 곧 정답이다: secrets → prod 네임스페이스 → catch-all None. apiserver에는 플래그 4개 + policy 파일/로그 디렉토리 hostPath 마운트가 필요하다.
 

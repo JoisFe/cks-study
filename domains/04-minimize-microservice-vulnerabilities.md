@@ -22,11 +22,15 @@ Pod Security Admission, securityContext, Secrets와 Encryption at Rest, gVisor �
 
 ### 1.1 PSP는 죽었다, PSA가 현행이다
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pod security admission`** 검색 → **"Pod Security Admission"** → PSA가 네임스페이스 라벨로 동작하는 built-in admission controller라는 개요를 확인.
+
 PodSecurityPolicy(PSP)는 **v1.25에서 완전히 제거**되었다. 2024-10 커리큘럼 개편에서도 PSP는 삭제되었으므로 시험에 나오지 않는다. 현행 메커니즘은 **Pod Security Admission(PSA)** — kube-apiserver에 내장된 admission controller(=파드 생성·수정 등 API 요청을 승인 전에 검증하거나 바꾸는 관문)로, **네임스페이스 라벨**만으로 동작한다. 별도 설치나 CRD(Custom Resource Definition — 쿠버네티스 API에 사용자 정의 리소스 타입을 추가하는 확장)가 필요 없다.
 
 PSA는 **Pod Security Standards(PSS)** 라는 3단계 보안 프로파일을 검사 기준으로 사용한다.
 
 ### 1.2 3레벨 비교 — 각 레벨이 금지하는 것
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pod security standards`** 검색 → **"Pod Security Standards"** → privileged/baseline/restricted 각 레벨이 금지·요구하는 필드 표를 대조.
 
 | 레벨 | 성격 | 주요 금지/요구 사항 |
 |------|------|---------------------|
@@ -37,6 +41,8 @@ PSA는 **Pod Security Standards(PSS)** 라는 3단계 보안 프로파일을 검
 > **📌 암기 포인트** — restricted 4종 세트: **runAsNonRoot true / allowPrivilegeEscalation false / drop ALL / seccomp RuntimeDefault**. 이 4개만 컨테이너에 넣으면 대부분의 restricted 위반이 해결된다.
 
 ### 1.3 3모드 — enforce / audit / warn
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`enforce standards namespace labels`** 검색 → **"Enforce Pod Security Standards with Namespace Labels"** → `pod-security.kubernetes.io/<mode>=<level>` 라벨 형식과 버전 고정 예시를 복사.
 
 | 모드 | 라벨 | 동작 |
 |------|------|------|
@@ -67,6 +73,8 @@ kubectl label --dry-run=server --overwrite ns team-red \
 
 시험에서 "이 pod가 restricted 네임스페이스에서 뜨도록 고쳐라"가 나오면 아래 템플릿을 그대로 적용한다.
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → runAsNonRoot·runAsUser·capabilities.drop·seccompProfile 필드 예제를 복사해 채운다.
+
 > **🛠 만드는 법** — Pod는 생성기가 있다: `k run secure-pod --image=nginx $do > pod.yaml` 로 뼈대를 뽑고 securityContext(runAsNonRoot·drop ALL·seccomp 등)를 채워 `k apply -f`. (여기서 `$do`=`--dry-run=client -o yaml`, 시험 세팅 변수)
 
 ```yaml
@@ -96,6 +104,8 @@ spec:
 
 ### 1.5 위반 pod 수정 워크플로우
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pod security standards`** 검색 → **"Pod Security Standards"** → 에러에 찍힌 위반 필드를 restricted 요구값으로 어떻게 고칠지 대조.
+
 1. 증상 확인: Deployment는 있는데 pod 개수가 0 → `kubectl -n <ns> describe rs <rs명>` 으로 거부 사유 확인. 에러 메시지에 위반 필드가 그대로 나온다 (예: `violates PodSecurity "restricted:latest": allowPrivilegeEscalation != false, ...`).
 2. `kubectl -n <ns> edit deploy <이름>` 으로 pod template의 securityContext를 1.4 템플릿대로 수정.
 3. 저장 후 ReplicaSet이 pod를 새로 만들면 `kubectl -n <ns> get pods` 로 Running 확인.
@@ -103,6 +113,8 @@ spec:
 ### 1.6 클러스터 전역 기본값과 exemptions — AdmissionConfiguration
 
 네임스페이스 라벨 없이도 클러스터 전체 기본 레벨을 걸고, 특정 네임스페이스/사용자를 면제(exempt)할 수 있다. kube-apiserver의 `--admission-control-config-file` 로 지정하는 AdmissionConfiguration 파일을 쓴다.
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`configuring the built-in admission controller`** 검색 → **"Enforce Pod Security Standards by Configuring the Built-in Admission Controller"** → AdmissionConfiguration/PodSecurityConfiguration(defaults·exemptions) YAML을 복사.
 
 > **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver에 물리는 설정 파일이다(생성기·dry-run·`kubectl apply` 대상 아님). kubernetes.io/docs 'Pod Security Admission' 예제를 복사해 편집하고 `--admission-control-config-file`로 지정한다.
 
@@ -165,6 +177,8 @@ Then try to create a Pod named `test-priv` in namespace `magpie` using image `ng
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`enforce standards namespace labels`** 검색 → **"Enforce Pod Security Standards with Namespace Labels"** → enforce/warn 라벨 형식을 복사.
+
 **1) 접근 방법**
 
 네임스페이스 라벨 2개(enforce, warn)를 붙이고, 위반 pod 생성을 시도해 거부 메시지를 파일로 저장한다.
@@ -207,6 +221,8 @@ kubectl get pods -n magpie   # test-priv가 없어야 정상
 
 ### 2.1 pod 레벨 vs container 레벨
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → 어떤 필드가 pod 레벨(`spec.securityContext`)이고 container 레벨인지 예제로 확인.
+
 securityContext는 pod 레벨(`spec.securityContext`)과 container 레벨(`spec.containers[].securityContext`) 두 곳에 존재하며, **겹치는 필드는 container 레벨이 우선**한다.
 
 | 필드 | Pod 레벨 | Container 레벨 | 설명 |
@@ -231,6 +247,8 @@ securityContext는 pod 레벨(`spec.securityContext`)과 container 레벨(`spec.
 `privileged: true`는 컨테이너에 호스트의 **모든 device 접근 + 모든 capability**를 부여한다. 컨테이너 안에서 호스트 디스크를 마운트해 파일시스템 전체를 읽고 쓸 수 있고, 커널 모듈을 로드할 수 있으며, 사실상 **노드 root 탈취와 동일**하다. baseline PSS 레벨부터 금지되는 이유다. 시험에서는 "이 워크로드에서 privileged를 제거하고 필요한 최소 권한만 남겨라" 유형이 나온다 — 대부분 `privileged: true` 삭제 + 필요한 capability만 `capabilities.add`로 남기는 식이다.
 
 ### 2.3 빈출 조합
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → runAsNonRoot·readOnlyRootFilesystem·capabilities.drop/add 조합 예제를 복사.
 
 ```yaml
 # ① 비루트 강제 (가장 흔한 요구)
@@ -310,6 +328,8 @@ Do not change anything else. Verify the running process UID inside the pod.
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → runAsUser·runAsGroup·runAsNonRoot·allowPrivilegeEscalation 필드 예제를 복사.
+
 **1) 접근 방법**
 
 `kubectl edit deploy`로 pod template의 securityContext를 수정한다. UID/GID는 pod 레벨에 한 번만 써도 전 컨테이너에 적용되지만, `allowPrivilegeEscalation`은 container 레벨 전용이므로 container에 써야 한다.
@@ -362,6 +382,8 @@ Secret의 `data` 필드는 **base64 인코딩**일 뿐 암호화가 아니다. `
 
 ### 3.2 생성과 사용
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`distribute credentials securely secrets`** 검색 → **"Distribute Credentials Securely Using Secrets"** → env(secretKeyRef)·secret volume 마운트 pod 예제를 복사.
+
 ```bash
 # 생성
 kubectl -n moon create secret generic db-cred \
@@ -411,6 +433,8 @@ kubectl -n moon exec secret-consumer -- env | grep DB_USER
 
 ### 3.3 etcd에서 평문 확인 실습
 
+> **📖 오픈북 — 문서에서 찾기** — `etcd.io/docs`에서 **`etcdctl get`** 검색 → get 명령과 `--cacert`/`--cert`/`--key` TLS 플래그 형식을 확인. (k8s etcd 인증서 경로 `/etc/kubernetes/pki/etcd/`는 암기)
+
 Encryption at Rest가 없는 클러스터에서 secret은 etcd에 **평문에 가까운 형태**로 저장된다. control plane 노드에서 직접 확인할 수 있다.
 
 ```bash
@@ -427,6 +451,8 @@ ETCDCTL_API=3 etcdctl \
 > **📌 암기 포인트** — etcd 키 경로는 `/registry/secrets/<네임스페이스>/<secret이름>`. 인증서 3종은 모두 `/etc/kubernetes/pki/etcd/` 아래의 `ca.crt`, `server.crt`, `server.key`. 시험장에서 헷갈리면 `kubectl -n kube-system get pod etcd-<노드명> -o yaml` 에서 etcd가 쓰는 플래그를 컨닝하면 된다.
 
 ### 3.4 RBAC로 secret 접근 제한
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`rbac`** 검색 → **"Using RBAC Authorization"** → Role/RoleBinding YAML(특정 secret만 `resourceNames`로 제한)을 복사.
 
 ```bash
 # 어떤 SA가 secret을 읽을 수 있는지 점검
@@ -455,6 +481,8 @@ kubectl config use-context cluster1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`distribute credentials securely secrets`** 검색 → **"Distribute Credentials Securely Using Secrets"** → secret을 volume으로 read-only 마운트하는 pod 예제를 복사.
 
 **1) 접근 방법**
 
@@ -511,6 +539,8 @@ kubectl -n moon exec secret-reader -- cat /etc/db/username
 
 ### 4.1 EncryptionConfiguration — providers 순서가 전부다
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → EncryptionConfiguration YAML(aescbc `keys` + `identity {}` 순서)을 복사.
+
 etcd에 저장되는 secret을 암호화하려면 kube-apiserver에 `EncryptionConfiguration` 파일을 물린다. 핵심 규칙 두 가지:
 
 - **쓰기(암호화)는 첫 번째 provider**로 수행된다.
@@ -526,7 +556,7 @@ etcd에 저장되는 secret을 암호화하려면 kube-apiserver에 `EncryptionC
 head -c 32 /dev/urandom | base64
 ```
 
-> **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver에 물리는 설정 파일이다(생성기·dry-run·`kubectl apply` 대상 아님). kubernetes.io/docs 'Encrypting Secret Data at Rest' 예제를 복사해 키만 채우고 `--encryption-provider-config`로 지정한다.
+> **🛠 만드는 법** — 이건 kubectl 리소스가 아니라 apiserver에 물리는 설정 파일이다(생성기·dry-run·`kubectl apply` 대상 아님). kubernetes.io/docs 'Encrypting Confidential Data at Rest' 예제를 복사해 키만 채우고 `--encryption-provider-config`로 지정한다.
 
 ```yaml
 # /etc/kubernetes/enc/enc.yaml (control plane 노드에 저장)
@@ -546,6 +576,8 @@ resources:
 provider 종류: `aescbc`(시험 표준), `secretbox`, `kms`(v2, 외부 KMS 연동). `aesgcm`도 존재하지만 키 로테이션 요건 때문에 시험에선 aescbc가 기본이다.
 
 ### 4.2 kube-apiserver에 연결
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → `--encryption-provider-config` 플래그와 hostPath volume mount 구성을 확인.
 
 ```yaml
 # /etc/kubernetes/manifests/kube-apiserver.yaml 수정 사항
@@ -577,6 +609,8 @@ ls /var/log/pods/kube-system_kube-apiserver-*/
 
 ### 4.3 기존 secret 일괄 재암호화
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → 기존 리소스를 재암호화하는 `kubectl get secrets ... | kubectl replace -f -` 명령을 확인.
+
 설정을 적용해도 **기존 secret은 여전히 평문**이다. 전부 다시 써서(re-write) 암호화를 트리거한다.
 
 ```bash
@@ -584,6 +618,8 @@ kubectl get secrets -A -o json | kubectl replace -f -
 ```
 
 ### 4.4 etcd에서 암호화 확인
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → `k8s:enc:aescbc:v1:` 접두어로 암호화를 검증하는 방법을 확인.
 
 ```bash
 ETCDCTL_API=3 etcdctl \
@@ -607,6 +643,8 @@ ssh cluster1-controlplane1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → providers 순서(첫 번째=쓰기 provider) 규칙과 재암호화 절차를 확인.
 
 **1) 접근 방법**
 
@@ -665,6 +703,8 @@ gVisor는 구글이 만든 **user-space 애플리케이션 커널**이다. 컨�
 
 ### 5.3 RuntimeClass 생성 / 적용 / 검증
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`runtime class`** 검색 → **"Runtime Class"** → RuntimeClass YAML(`handler`)과 pod `runtimeClassName` 적용 예제를 복사.
+
 > **🛠 만드는 법** — RuntimeClass는 `kubectl create` 생성기가 없다(dry-run으로 뽑을 수 없음). kubernetes.io/docs에서 'RuntimeClass' 최소 예제를 복사해 `handler`만 바꿔 채운다.
 
 ```yaml
@@ -711,6 +751,8 @@ kubectl config use-context cluster2
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`runtime class`** 검색 → **"Runtime Class"** → RuntimeClass 리소스와 `runtimeClassName` 예제를 복사.
 
 **1) 접근 방법**
 
@@ -766,6 +808,8 @@ kubectl get pod sandbox-test -o jsonpath='{.spec.runtimeClassName}'
 
 ### 6.1 Cilium 투명 암호화 — WireGuard / IPsec
 
+> **📖 오픈북 — 문서에서 찾기** — `docs.cilium.io/en/stable`에서 **`encryption`** 검색 → **"Transparent Encryption"**(WireGuard/IPsec) → 암호화 활성화 옵션과 `cilium status` 확인 방법을 참고.
+
 Cilium CNI(Container Network Interface — 파드 간 네트워크를 구현하는 플러그인 규격, Calico·Cilium 등)는 노드 간 pod 트래픽을 **네트워크 계층에서 투명하게 암호화**할 수 있다. 애플리케이션이나 pod spec 수정이 전혀 필요 없다.
 
 - **WireGuard**: 노드마다 키가 자동 생성/교환되어 설정이 단순. 시험 환경에서 만날 가능성이 높은 쪽.
@@ -786,6 +830,8 @@ kubectl -n kube-system get cm cilium-config -o yaml | grep -i -E "enable-wiregua
 CiliumNetworkPolicy(참고: L7/FQDN 정책도 가능)는 `apiVersion: cilium.io/v2`, `endpointSelector`, `fromEndpoints`/`toEndpoints`, `toPorts`, `toFQDNs`를 쓴다. 암호화 문제와 별개로 Cilium이 깔린 클러스터에서는 NetworkPolicy 문제가 CiliumNetworkPolicy로 변형되어 나올 수 있다.
 
 ### 6.2 Istio mTLS — PeerAuthentication STRICT
+
+> **📖 오픈북 — 문서에서 찾기** — `istio.io/latest/docs`에서 **`peer authentication`** 검색 → **"Authentication Policy"** → PeerAuthentication STRICT(`spec.mtls.mode`) 예제를 복사.
 
 Istio는 서비스 메시 계층에서 워크로드 간 **mTLS(상호 TLS)** 를 제공한다. 전통 모드에서는 각 pod에 Envoy **sidecar**가 주입되어 트래픽을 프록시하고, 최신 **ambient 모드**에서는 sidecar 없이 노드 레벨 프록시(ztunnel)가 같은 역할을 한다. 시험 기준으로는 sidecar 방식 + PeerAuthentication이 핵심이다.
 
@@ -843,6 +889,8 @@ kubectl config use-context cluster3
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `istio.io/latest/docs`에서 **`peer authentication`** 검색 → **"Authentication Policy"** → 네임스페이스 STRICT PeerAuthentication 예제를 복사.
+
 **1) 접근 방법**
 
 라벨 → rollout restart → PeerAuthentication STRICT, 3단계 그대로.
@@ -898,6 +946,8 @@ kubectl config use-context cluster1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`enforce standards namespace labels`** 검색 → **"Enforce Pod Security Standards with Namespace Labels"** → enforce/warn/audit 라벨 3종 형식을 복사.
 
 **1) 접근 방법**
 
@@ -955,6 +1005,8 @@ kubectl config use-context cluster1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pod security standards`** 검색 → **"Pod Security Standards"** → restricted가 요구하는 필드(4종 세트)를 대조.
 
 **1) 접근 방법**
 
@@ -1020,6 +1072,8 @@ ssh cluster1-controlplane1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`configuring the built-in admission controller`** 검색 → **"Enforce Pod Security Standards by Configuring the Built-in Admission Controller"** → AdmissionConfiguration/PodSecurityConfiguration(defaults·exemptions) YAML을 복사.
 
 **1) 접근 방법**
 
@@ -1104,6 +1158,8 @@ kubectl config use-context cluster1
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → capabilities.drop/add 예제("Set capabilities for a Container" 섹션)를 복사.
+
 **1) 접근 방법**
 
 UID/GID/runAsNonRoot는 pod 레벨, capabilities/allowPrivilegeEscalation은 container 레벨.
@@ -1163,6 +1219,8 @@ kubectl config use-context cluster1
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → readOnlyRootFilesystem·allowPrivilegeEscalation 필드 예제를 복사.
+
 **1) 접근 방법**
 
 privileged 삭제 + readOnlyRootFilesystem + /tmp emptyDir 마운트.
@@ -1221,6 +1279,8 @@ kubectl config use-context cluster1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`distribute credentials securely secrets`** 검색 → **"Distribute Credentials Securely Using Secrets"** → env(secretKeyRef)와 secret volume 마운트 예제를 복사.
 
 **1) 접근 방법**
 
@@ -1290,6 +1350,8 @@ ssh cluster1-controlplane1
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `etcd.io/docs`에서 **`etcdctl get`** 검색 → get 명령과 `--cacert`/`--cert`/`--key` TLS 플래그 형식을 확인. (`/registry/secrets/<ns>/<name>` 키 경로와 인증서 위치는 암기)
+
 **1) 접근 방법**
 
 etcd 인증서 3종으로 `/registry/secrets/venus/database-access` 키를 읽는다. 이 클러스터에 Encryption at Rest가 없다면 값이 그대로 보인다.
@@ -1342,6 +1404,8 @@ ssh cluster1-controlplane1
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → aescbc EncryptionConfiguration과 apiserver 연결·재암호화 절차 전체를 복사.
 
 **1) 접근 방법**
 
@@ -1422,6 +1486,8 @@ ssh cluster2-controlplane1
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting confidential data at rest`** 검색 → **"Encrypting Confidential Data at Rest"** → providers 순서(첫 번째=쓰기 provider) 규칙을 확인.
+
 **1) 접근 방법**
 
 증상(새 secret이 평문) = `identity`가 첫 번째 provider. `aescbc`를 첫 번째로 올리고 apiserver 재기동, 전체 재암호화.
@@ -1473,6 +1539,8 @@ kubectl config use-context cluster2
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`runtime class`** 검색 → **"Runtime Class"** → RuntimeClass YAML과 `spec.template.spec.runtimeClassName` 적용 위치를 확인.
 
 **1) 접근 방법**
 
@@ -1539,6 +1607,8 @@ kubectl config use-context cluster3
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `docs.cilium.io/en/stable`에서 **`encryption`** 검색 → **"Transparent Encryption"** → 암호화 상태 확인 방법(WireGuard/IPsec 구분)을 참고.
+
 **1) 접근 방법**
 
 cilium agent의 `cilium status` 출력에서 Encryption 줄을 읽는다. Cilium CLI가 있으면 `cilium status`, 없으면 DaemonSet pod에 exec.
@@ -1586,6 +1656,8 @@ kubectl config use-context cluster3
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `istio.io/latest/docs`에서 **`peer authentication`** 검색 → **"Authentication Policy"** → 네임스페이스 STRICT PeerAuthentication 예제를 복사.
 
 **1) 접근 방법**
 

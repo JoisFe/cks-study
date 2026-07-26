@@ -69,6 +69,8 @@ A security audit suspects the `kubelet` binary on `worker1` may have been tamper
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — 바이너리 sha512 무결성 검증은 허용 문서 8개에 없다(OS 레벨 작업) → `which`/`readlink -f`로 실제 경로 확인, `sha512sum <path> | awk '{print $1}'`로 해시만 추출·대조하는 흐름을 미리 암기.
+
 **1) 접근 방법**
 
 바이너리 무결성 검증은 "설치된 바이너리의 해시"와 "공식 릴리스 해시"를 비교하는 단순 작업이다. 핵심은 (1) 실제로 실행 중인 바이너리 경로를 정확히 찾는 것, (2) `sha512sum`으로 계산해 문자열을 정확히 대조하는 것이다. 경로는 배포판마다 `/usr/bin/kubelet` 또는 `/usr/local/bin/kubelet`일 수 있으니 추측하지 말고 확인한다.
@@ -144,6 +146,8 @@ Namespace `finance` carries the label `env=prod` and runs the `app=payments` Pod
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"** → 한 `to:` 항목 안 `namespaceSelector`+`podSelector`(AND) / 별개 항목(OR)과 DNS(53) egress 예제 YAML을 복사해 뼈대로.
 
 **1) 접근 방법**
 
@@ -250,6 +254,8 @@ Namespace `web` exposes a Service named `web-frontend` of type `NodePort`, which
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`service`** 검색 → **"Service"**(Publishing Services / `type` 섹션) → `spec.type: ClusterIP`와 NodePort→ClusterIP 전환 시 `nodePort` 필드 정리 내용 확인.
+
 **1) 접근 방법**
 
 NodePort는 모든 노드에 포트를 열어 공격 표면을 넓힌다. 내부 전용이면 ClusterIP로 충분하다. `type`만 바꾸면 되며, `edit` 시 `nodePort` 필드는 자동으로 제거되도록 함께 지운다. 바꾸기 전에 어떤 노드 포트가 열려 있었는지 기록해 두면 검증이 쉽다.
@@ -310,6 +316,8 @@ Harden the API server on `master1` and prove the effect of the `NodeRestriction`
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`admission controllers`** 검색 → **"Admission Control in Kubernetes"**(NodeRestriction 섹션) → `--enable-admission-plugins`에 `NodeRestriction` 추가·동작 확인(Node authorizer는 **"Using Node Authorization"** 참고).
 
 **1) 접근 방법**
 
@@ -396,6 +404,8 @@ On `master1`, tighten the API server's exposure.
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`authenticating`** 검색 → **"Authenticating"**(Anonymous requests 섹션) → `--anonymous-auth=false` 플래그와 익명 요청 차단 동작 확인.
 
 **1) 접근 방법**
 
@@ -488,6 +498,8 @@ The security baseline forbids the rarely-used network protocols SCTP and DCCP. O
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — 커널 모듈 blacklist(`/etc/modprobe.d/*.conf`, `install <mod> /bin/false`, `modprobe -r`)는 허용 문서 8개에 없다(리눅스 OS 기능) → 파일 경로·문법·명령을 미리 암기.
+
 **1) 접근 방법**
 
 `/etc/modprobe.d/`에 blacklist 파일을 만들어 영구 차단한다. `blacklist <mod>`는 부팅 시 자동 로드를 막고, `install <mod> /bin/false`는 명시적 `modprobe`까지 무력화한다(더 강력). 이미 로드돼 있으면 `modprobe -r`로 내린다.
@@ -558,6 +570,8 @@ Profile sources are provided on the main terminal:
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`apparmor`**·**`seccomp`** 검색 → **"Restrict a Container's Access to Resources with AppArmor"** + **"Restrict a Container's Syscalls with seccomp"** → `securityContext.appArmorProfile`/`seccompProfile`의 `type: Localhost`·`localhostProfile` 필드 복사.
 
 **1) 접근 방법**
 
@@ -645,6 +659,8 @@ Use Pod Security Admission (PSA) to enforce standards on namespace `payments`, w
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pod security admission`** 검색 → **"Enforce Pod Security Standards by Configuring the Built-in Admission Controller"** → `AdmissionConfiguration`+`exemptions.namespaces` YAML 복사(네임스페이스 라벨 값·모드는 **"Pod Security Standards"** 참고).
 
 **1) 접근 방법**
 
@@ -766,6 +782,8 @@ The existing `EncryptionConfiguration` is at `/etc/kubernetes/enc/enc.yaml` on `
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`encrypting secret data at rest`** 검색 → **"Encrypting Confidential Data at Rest"**(Rotating a decryption key 섹션) → `EncryptionConfiguration`의 `keys` 순서(첫 key=write)와 `kubectl get secrets -A -o json | kubectl replace -f -` 재암호화 흐름 확인.
 
 **1) 접근 방법**
 
@@ -889,6 +907,8 @@ Cluster `k8s-p2` uses Cilium as its CNI. Node-to-node (pod-to-pod) traffic must 
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `docs.cilium.io/en/stable`에서 **`wireguard`** 검색 → **"WireGuard Transparent Encryption"** → `encryption.enabled=true`·`encryption.type=wireguard` Helm 값과 `cilium status`·`wg show` 검증법을 복사.
+
 **1) 접근 방법**
 
 이 문제는 일부 서술형이다. `cilium status`로 현재 암호화 상태를 확인하고, 미적용이면 Cilium을 WireGuard 모드로 켜는 Helm 값을 기록한다. 그리고 노드 간 트래픽이 실제 암호화되는지 검증하는 방법을 서술한다. 허용 문서 `docs.cilium.io/en/stable`에서 "WireGuard" 검색으로 확인 가능하다.
@@ -972,6 +992,8 @@ Only signed container images may run in namespace `prod`. A cosign public key is
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북** — cosign은 허용 문서 8개에 없다(sigstore 사이트 차단) → `cosign verify --key <pub> <image>` 명령과 "성공 출력만 저장" 규칙을 미리 암기.
+
 **1) 접근 방법**
 
 `cosign verify --key <pub> <image>`로 서명을 검증한다. 서명된 이미지는 검증 성공(payload 출력), 서명 안 된 이미지는 "no matching signatures" 에러가 난다. 서명된 태그를 찾아 Deployment 이미지를 교체하면 된다.
@@ -1037,6 +1059,8 @@ Static analysis must pass before deployment.
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북** — KubeLinter와 Dockerfile 하드닝은 허용 문서 8개에 없다 → `kube-linter lint <dir>` 지적 키(`latest-tag`/`unset-cpu-requirements`/`unset-memory-requirements`/`run-as-non-root`)와 멀티스테이지·비루트 `USER` 패턴을 미리 암기.
 
 **1) 접근 방법**
 
@@ -1133,6 +1157,8 @@ Namespace `internal` must pull from a private registry, and must run the less vu
 <details>
 <summary>✅ 정답 및 해설</summary>
 
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`pull image private registry`** 검색 → **"Pull an Image from a Private Registry"** → `kubectl create secret docker-registry`와 SA `imagePullSecrets` 부착 방법 복사(trivy는 허용 문서에 없으니 `trivy image --severity CRITICAL,HIGH` 옵션은 암기).
+
 **1) 접근 방법**
 
 `kubectl create secret docker-registry`로 pull secret을 만들고 SA에 붙인다(SA에 붙이면 그 SA를 쓰는 모든 Pod에 자동 적용). trivy로 두 태그의 CRITICAL/HIGH 개수를 비교해 적은 쪽으로 교체한다.
@@ -1204,6 +1230,8 @@ On `worker1` (`ssh worker1`):
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `falco.org/docs`에서 **`rules`**·**`supported fields`** 검색 → **"Falco Rules"**(rule/condition/output/priority 구조) + **"Supported Fields for Conditions and Outputs"**(`%container.name`·`fd.name`·`open_read`) → 커스텀 룰 뼈대·출력 필드 복사.
 
 **1) 접근 방법**
 
@@ -1304,6 +1332,8 @@ A Pod in namespace `web` is suspected of running a malicious process that beacon
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`network policy`** 검색 → **"Network Policies"**(Default deny all ingress/egress 예제) → 격리용 ingress+egress default-deny YAML 복사(`/proc`·컨테이너 검사는 **"Debugging Kubernetes nodes with crictl"** 참고).
 
 **1) 접근 방법**
 
@@ -1413,6 +1443,8 @@ Deployment `report-gen` in namespace `apps` runs with a writable root filesystem
 
 <details>
 <summary>✅ 정답 및 해설</summary>
+
+> **📖 오픈북 — 문서에서 찾기** — `kubernetes.io/docs`에서 **`security context`** 검색 → **"Configure a Security Context for a Pod or Container"** → `readOnlyRootFilesystem`·`allowPrivilegeEscalation`·`privileged` 필드와 `emptyDir` 마운트 예제 복사.
 
 **1) 접근 방법**
 
